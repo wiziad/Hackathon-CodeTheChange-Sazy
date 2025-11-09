@@ -2,13 +2,11 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { useAuthStore } from "@/store/authStore";
+import { useAuth } from '@/providers/auth-provider';
 import { MapPin, Users, Clock, User, Grid } from "lucide-react";
 import { 
   Card,
-  EventCard,
-  StickyHeader,
-  HamburgerMenu
+  EventCard
 } from "@/components/ui/base";
 
 interface Profile {
@@ -69,6 +67,7 @@ interface FeedItem {
 
 export default function Feed() {
   const router = useRouter();
+  const { profile } = useAuth();
   const [feedItems, setFeedItems] = useState<FeedItem[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -175,7 +174,7 @@ export default function Feed() {
   };
 
   const handleViewEvent = (eventId: string) => {
-    const role = useAuthStore.getState().role || (typeof window !== 'undefined' ? (() => { try { const s = localStorage.getItem('metra_session'); if (!s) return null; const parsed = JSON.parse(s); return parsed.role || parsed.user?.role; } catch { return null; } })() : null);
+    const role = profile?.role || 'recipient';
     const prefix = role === 'donor' ? '/donor' : role === 'receiver' ? '/receiver' : '';
     router.push(`${prefix}/event/${eventId}`);
   };
@@ -189,63 +188,36 @@ export default function Feed() {
   }
 
   return (
-    <div className="min-h-screen bg-white dark:bg-black flex flex-col">
-      <StickyHeader
-        rightSide={(
-          <>
-            <button
-              onClick={() => router.push('/donor')}
-              className="p-2 rounded-xl hover:bg-gray-100 transition-all duration-200"
-              aria-label="Dashboard"
-            >
-              <Grid className="h-5 w-5 text-brand-600" />
-            </button>
-            <button
-              onClick={() => router.push('/profile')}
-              className="p-2 rounded-xl hover:bg-gray-100 transition-all duration-200"
-              aria-label="Profile"
-            >
-              <User className="h-5 w-5 text-brand-600" />
-            </button>
-            <HamburgerMenu />
-          </>
-        )}
-      />
+    <div className="container max-w-2xl mx-auto space-y-6">
+      <div className="text-center">
+        <h1 className="text-2xl font-bold">Hi {profile?.name || 'Friend'}!</h1>
+        <p className="text-muted-foreground">Find food donation events near you</p>
+      </div>
 
-      {/* Main Content */}
-      <main className="flex-1 p-4 pb-20 md:pb-4">
-        <div className="container max-w-2xl mx-auto space-y-6">
-          <div className="text-center">
-            <h1 className="text-2xl font-bold">Local Events</h1>
-            <p className="text-muted-foreground">Find food donation events near you</p>
+      {feedItems.length === 0 ? (
+        <Card>
+          <div className="text-center py-12">
+            <p className="text-muted-foreground">No events found in your area</p>
           </div>
-
-          {feedItems.length === 0 ? (
-            <Card>
-              <div className="text-center py-12">
-                <p className="text-muted-foreground">No events found in your area</p>
-              </div>
-            </Card>
-          ) : (
-            <div className="space-y-6">
-              {feedItems.map((item) => (
-                <EventCard
-                  key={item.event.id}
-                  title={item.event.title}
-                  description={item.event.description || ""}
-                  distance={`${item.event.distanceKm?.toFixed(1)} km`}
-                  time="Multiple times available"
-                  attendees={item.event.rsvpCount}
-                  capacity={20}
-                  items={item.event.items.slice(0, 3).map(i => `${i.targetQty} items`)}
-                  rsvpd={item.event.rsvps.includes("current-user")}
-                  onRsvp={() => handleRSVP(item.event.id)}
-                />
-              ))}
-            </div>
-          )}
+        </Card>
+      ) : (
+        <div className="space-y-6">
+          {feedItems.map((item) => (
+            <EventCard
+              key={item.event.id}
+              title={item.event.title}
+              description={item.event.description || ""}
+              distance={`${item.event.distanceKm?.toFixed(1)} km`}
+              time="Multiple times available"
+              attendees={item.event.rsvpCount}
+              capacity={20}
+              items={item.event.items.slice(0, 3).map(i => `${i.targetQty} items`)}
+              rsvpd={item.event.rsvps.includes("current-user")}
+              onRsvp={() => handleRSVP(item.event.id)}
+            />
+          ))}
         </div>
-      </main>
+      )}
     </div>
   );
 }

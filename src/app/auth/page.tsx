@@ -1,39 +1,51 @@
-"use client";
-import { useRouter } from "next/navigation";
-import { Card, Input, PrimaryButton, SecondaryButton, StickyHeader, MetraLogo } from "@/components/ui/base";
+'use client'
+import { useEffect, useState } from 'react'
+import { createClient } from '@/lib/supabase/client'
+import { useRouter } from 'next/navigation'
+import { Card, PrimaryButton } from '@/components/ui/base'
 
-export default function AuthPage() {
-  const router = useRouter();
-  const demo = (role: "donor" | "recipient") => {
-    const mock = { token: "mock", user: { id: `${role}_1`, name: role==="donor" ? "Alex" : "Sara", role }, role };
-    localStorage.setItem("metra_session", JSON.stringify(mock));
-    router.push(role === "donor" ? "/donor" : "/receiver");
-  };
+export default function LoginPage() {
+  const router = useRouter()
+  const [error, setError] = useState<string | null>(null)
+
+  useEffect(() => {
+    const supabase = createClient();
+    supabase.auth.getSession().then(({ data }) => {
+      if (data.session) router.push('/home')
+    })
+  }, [router])
+
+  const signInWithGoogle = async () => {
+    try {
+      const supabase = createClient();
+      localStorage.setItem('metra_return_to', '/home');
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+          redirectTo: `${window.location.origin}/auth/callback`,
+          queryParams: { prompt: 'select_account' },
+        },
+      })
+      if (error) {
+        console.error('OAuth error:', error)
+        setError(error.message)
+      }
+    } catch (err) {
+      console.error('Unexpected error:', err)
+      setError('An unexpected error occurred')
+    }
+  }
 
   return (
-    <div className="min-h-screen bg-brand-50 text-brand-900">
-      <StickyHeader />
-      <main className="max-w-7xl mx-auto px-4 py-8">
-        <div className="max-w-md mx-auto">
-          <Card className="p-8">
-            <div className="flex items-center justify-center gap-3 mb-4">
-              <MetraLogo /><span className="text-xl font-bold">Metra</span>
-            </div>
-            <h1 className="text-3xl font-bold text-center mb-2">Welcome to Metra</h1>
-            <p className="text-center text-brand-700 mb-8">Sign in to coordinate food donations</p>
-
-            <Input placeholder="Enter your email" type="email" className="mb-6" />
-
-            <div className="space-y-3 mb-6">
-              <PrimaryButton onClick={() => demo("donor")} className="w-full">Try as Donor</PrimaryButton>
-              <PrimaryButton onClick={() => demo("recipient")} className="w-full">Try as Recipient</PrimaryButton>
-              <SecondaryButton onClick={() => router.push("/landing")} className="w-full">Browse as Guest</SecondaryButton>
-            </div>
-
-            <p className="text-xs text-brand-600 text-center">Your privacy matters. We never share your information.</p>
-          </Card>
-        </div>
-      </main>
+    <div className="min-h-screen flex items-center justify-center p-6">
+      <Card className="w-full max-w-md p-8 text-center">
+        <h1 className="text-2xl font-bold mb-2">Sign in to Metra</h1>
+        <p className="text-gray-600 mb-6">Use your Google account</p>
+        {error && <p className="text-red-500 mb-4">{error}</p>}
+        <PrimaryButton onClick={signInWithGoogle} className="w-full">
+          Continue with Google
+        </PrimaryButton>
+      </Card>
     </div>
-  );
+  )
 }

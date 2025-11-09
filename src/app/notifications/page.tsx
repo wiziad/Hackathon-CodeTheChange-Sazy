@@ -6,9 +6,7 @@ import { useAuthStore } from "@/store/authStore";
 import { Globe, Bell, CheckCircle, User, Calendar, MessageCircle } from "lucide-react";
 import { 
   Card,
-  OutlineButton,
-  MetraLogo,
-  HamburgerMenu
+  OutlineButton
 } from "@/components/ui/base";
 
 interface Notification {
@@ -170,110 +168,60 @@ export default function Notifications() {
   }
 
   return (
-    <div className="min-h-screen bg-background flex flex-col">
-      {/* Header */}
-      <header className="border-b">
-        <div className="container flex h-16 items-center justify-between px-4">
-          <div className="flex items-center gap-2">
-            <button 
-              className="p-2 rounded-xl hover:bg-gray-100 transition-all duration-200"
-              onClick={() => router.back()}
-            >
-              ←
-            </button>
-            <button 
-              onClick={() => router.push('/')} 
-              className="hover:opacity-80 transition-opacity cursor-pointer"
-            >
-              <MetraLogo />
-            </button>
-          </div>
-          <HamburgerMenu />
+    <div className="container max-w-2xl mx-auto space-y-6">
+      <div className="flex justify-between items-center">
+        <div>
+          <h1 className="text-2xl font-bold">Notifications</h1>
         </div>
-      </header>
+        <OutlineButton onClick={handleMarkAllRead} className="text-sm">
+          Mark all as read
+        </OutlineButton>
+      </div>
 
-      {/* Main Content */}
-      <main className="flex-1 p-4 pb-20 md:pb-4">
-        <div className="container max-w-2xl mx-auto space-y-6">
-          <div className="flex justify-between items-center">
-            <div>
-              <h1 className="text-2xl font-bold">Notifications</h1>
-              <p className="text-muted-foreground">
-                {notifications.filter(n => !n.read).length} unread
-              </p>
-            </div>
-            {notifications.some(n => !n.read) && (
-              <OutlineButton onClick={handleMarkAllRead}>
-                Mark all read
-              </OutlineButton>
-            )}
-          </div>
-
-          {notifications.length === 0 ? (
-            <Card>
-              <div className="p-6">
-                <div className="flex flex-col items-center justify-center py-4">
-                  <Bell className="h-12 w-12 text-muted-foreground mb-4" />
-                  <h3 className="text-lg font-semibold mb-2">No notifications</h3>
-                  <p className="text-muted-foreground text-center">
-                    When you receive updates, they'll appear here
-                  </p>
-                </div>
-              </div>
-            </Card>
-          ) : (
-            <div className="space-y-6">
-              {Object.entries(groupedNotifications).map(([group, groupNotifications]) => (
-                groupNotifications.length > 0 && (
-                  <div key={group}>
-                    <h2 className="text-lg font-semibold mb-3">{group}</h2>
-                    <div className="space-y-3">
-                      {groupNotifications.map((notification) => (
-                        <Card 
-                          key={notification.id} 
-                          className={`cursor-pointer transition-colors ${
-                            !notification.read ? "border-green-600" : ""
-                          }`}
-                          onClick={() => handleNotificationClick(notification)}
-                        >
-                          <div className="p-4">
-                            <div className="flex items-start gap-3">
-                              <div className={`h-10 w-10 rounded-full flex items-center justify-center ${
-                                !notification.read ? "bg-green-600" : "bg-gray-100 dark:bg-gray-900"
-                              }`}>
-                                {getNotificationIcon(notification.type)}
-                              </div>
-                              <div className="flex-1 min-w-0">
-                                <div className="flex justify-between">
-                                  <h3 className="font-semibold">{notification.title}</h3>
-                                  {!notification.read && (
-                                    <span className="h-2 w-2 rounded-full bg-green-600"></span>
-                                  )}
-                                </div>
-                                {notification.body && (
-                                  <p className="text-sm text-muted-foreground mt-1">
-                                    {notification.body}
-                                  </p>
-                                )}
-                                <p className="text-xs text-muted-foreground mt-2">
-                                  {new Date(notification.createdAt).toLocaleTimeString([], { 
-                                    hour: '2-digit', 
-                                    minute: '2-digit' 
-                                  })}
-                                </p>
-                              </div>
-                            </div>
-                          </div>
-                        </Card>
-                      ))}
-                    </div>
+      {Object.entries(groupedNotifications).map(([date, notifications]) => (
+        notifications.length > 0 && (
+          <div key={date} className="space-y-3">
+            <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">{date}</h2>
+            {notifications.map((notification) => (
+              <Card 
+                key={notification.id} 
+                className={`p-4 cursor-pointer transition-all duration-200 hover:shadow-md ${
+                  notification.read ? "bg-background" : "bg-accent"
+                }`}
+                onClick={() => handleNotificationClick(notification)}
+              >
+                <div className="flex items-start gap-3">
+                  <div className="mt-1">
+                    {getNotificationIcon(notification.type)}
                   </div>
-                )
-              ))}
-            </div>
-          )}
-        </div>
-      </main>
+                  <div className="flex-1 min-w-0">
+                    <h3 className="font-medium truncate">{notification.title}</h3>
+                    {notification.body && (
+                      <p className="text-sm text-muted-foreground mt-1 line-clamp-2">
+                        {notification.body}
+                      </p>
+                    )}
+                    <p className="text-xs text-muted-foreground mt-2">
+                      {new Date(notification.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                    </p>
+                  </div>
+                  {!notification.read && (
+                    <div className="w-2 h-2 rounded-full bg-primary mt-2"></div>
+                  )}
+                </div>
+              </Card>
+            ))}
+          </div>
+        )
+      ))}
+
+      {notifications.length === 0 && (
+        <Card className="p-8 text-center">
+          <Bell className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+          <h3 className="text-lg font-medium mb-2">No notifications</h3>
+          <p className="text-muted-foreground">You're all caught up!</p>
+        </Card>
+      )}
     </div>
   );
 }

@@ -8,8 +8,7 @@ import {
   PollOption,
   PrimaryButton,
   SecondaryButton,
-  OutlineButton,
-  MetraLogo
+  OutlineButton
 } from "@/components/ui/base";
 
 export default function EventDetailPage({ params }: { params: Promise<{ eventId: string }> }) {
@@ -219,139 +218,183 @@ export default function EventDetailPage({ params }: { params: Promise<{ eventId:
     setPoll(updatedPoll);
   };
 
-  // effectiveRole is the detected role from session/localStorage
-  const effectiveRole = role;
+  const handleViewChat = () => {
+    router.push(`/event/${eventId}/chat`);
+  };
 
-  const handleChat = () => {
-    const prefix = effectiveRole === "donor" ? "/donor" : effectiveRole === "receiver" ? "/receiver" : "";
-    router.push(`${prefix}/event/${eventId}/chat`);
+  const handleBack = () => {
+    router.back();
   };
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <p>Loading...</p>
+      <div className="flex items-center justify-center min-h-screen">
+        <p>Loading event details...</p>
       </div>
     );
   }
 
-  if (!event || !creator || !poll) {
+  if (!event) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <p>Event not found</p>
+      <div className="flex items-center justify-center min-h-screen">
+        <Card className="p-8 text-center">
+          <h2 className="text-xl font-bold mb-2">Event not found</h2>
+          <p className="text-muted-foreground mb-4">The event you're looking for doesn't exist or has been removed.</p>
+          <PrimaryButton onClick={handleBack}>Go Back</PrimaryButton>
+        </Card>
       </div>
     );
   }
 
-  const formatTimeLabel = (timeOption: string) => {
-    const parts = timeOption.split('_');
-    if (parts.length === 3) {
-      const day = parts[0].charAt(0).toUpperCase() + parts[0].slice(1);
-      const startTime = `${parts[1]}:00`;
-      const endTime = `${parts[2]}:00`;
-      return `${day} ${startTime} - ${endTime}`;
-    }
-    return timeOption;
+  const timeLabels: Record<string, string> = {
+    "today_11_13": "Today, 11:00 AM - 1:00 PM",
+    "today_13_15": "Today, 1:00 PM - 3:00 PM",
+    "tomorrow_09_11": "Tomorrow, 9:00 AM - 11:00 AM"
   };
 
-  const totalTimeVotes = Object.values(poll.timeVotes).reduce((sum: number, votes: any) => sum + Number(votes), 0);
-  const totalSiteVotes = Object.values(poll.siteVotes).reduce((sum: number, votes: any) => sum + Number(votes), 0);
+  const totalVotes = Object.values(poll?.timeVotes || {}).reduce((sum: number, votes: unknown) => sum + (votes as number), 0);
 
   return (
-    <div className="min-h-screen bg-background flex flex-col">
-      <header className="border-b">
-        <div className="container flex h-16 items-center justify-between px-4">
+    <div className="max-w-2xl mx-auto space-y-6 p-4">
+      <div className="flex items-center gap-2">
+        <button 
+          className="p-2 rounded-xl hover:bg-gray-100 transition-all duration-200"
+          onClick={handleBack}
+        >
+          ←
+        </button>
+        <h1 className="text-2xl font-bold">{event.title}</h1>
+      </div>
+
+      <Card className="p-6">
+        <div className="flex items-start gap-4 mb-4">
+          <div className="h-16 w-16 rounded-full bg-green-600 flex items-center justify-center">
+            <span className="text-xl font-bold text-white">
+              {creator?.name.charAt(0).toUpperCase()}
+            </span>
+          </div>
+          <div>
+            <h2 className="font-bold">{creator?.name}</h2>
+            <p className="text-sm text-muted-foreground">Event organizer</p>
+          </div>
+        </div>
+
+        <p className="text-muted-foreground mb-6">{event.description}</p>
+
+        <div className="grid grid-cols-2 gap-4 mb-6">
           <div className="flex items-center gap-2">
-            <button
-              className="p-2 rounded-xl hover:bg-gray-100 transition-all duration-200"
-              onClick={() => router.back()}
-            >
-              ←
-            </button>
-            <button
-              onClick={() => router.push('/')}
-              className="hover:opacity-80 transition-opacity cursor-pointer"
-            >
-              <MetraLogo />
-            </button>
+            <MapPin className="h-5 w-5 text-muted-foreground" />
+            <span>{event.distanceKm?.toFixed(1)} km away</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <Users className="h-5 w-5 text-muted-foreground" />
+            <span>{event.rsvpCount} people going</span>
           </div>
         </div>
-      </header>
 
-      <main className="flex-1 p-4 pb-20 md:pb-4">
-        <div className="container max-w-4xl mx-auto space-y-6">
-          <h1 className="text-2xl font-bold">{event.title}</h1>
-          <p className="text-muted-foreground">{event.description}</p>
+        <div className="mb-6">
+          <h3 className="font-semibold mb-3">Items needed</h3>
+          <div className="flex flex-wrap gap-2">
+            {event.items.map((item: any, index: number) => (
+              <span key={index} className="px-3 py-1 bg-brand-100 text-brand-800 text-sm rounded-full">
+                {item.targetQty} {item.categoryId === "1" ? "Produce" : item.categoryId === "2" ? "Canned Goods" : "Bakery"}
+              </span>
+            ))}
+          </div>
+        </div>
 
-          <Card>
-            <div className="p-4">
-              <div className="flex gap-4 items-center mb-4">
-                <div className="flex-1">
-                  <p className="text-sm text-muted-foreground">Organized by {creator.name}</p>
+        <div className="flex gap-3">
+          {role === "donor" ? (
+            <PrimaryButton 
+              className="flex-1" 
+              onClick={handleRequestCollaborate}
+              disabled={hasRequested}
+            >
+              {hasRequested ? "Requested - Pending" : "Request to Collaborate"}
+            </PrimaryButton>
+          ) : (
+            <PrimaryButton 
+              className="flex-1" 
+              onClick={handleRSVP}
+              disabled={hasRSVPd}
+            >
+              {hasRSVPd ? "RSVP'd" : "RSVP"}
+            </PrimaryButton>
+          )}
+          <OutlineButton onClick={handleViewChat}>
+            <MessageCircle className="h-5 w-5" />
+          </OutlineButton>
+        </div>
+      </Card>
+
+      <Card className="p-6">
+        <h3 className="font-semibold mb-4">Time Options</h3>
+        <div className="space-y-3">
+          {event.timeOptions.map((time: string) => (
+            <PollOption
+              key={time}
+              label={timeLabels[time]}
+              votes={poll?.timeVotes[time] || 0}
+              total={totalVotes as number}
+              selected={selectedTime === time}
+              onClick={() => handleVote(time)}
+            />
+          ))}
+        </div>
+      </Card>
+
+      <Card className="p-6">
+        <h3 className="font-semibold mb-4">Site Options</h3>
+        <div className="space-y-4">
+          {siteOptions.map((site) => (
+            <div 
+              key={site.id} 
+              className={`p-4 rounded-xl border cursor-pointer transition-all ${
+                selectedSite === site.id 
+                  ? "border-green-500 bg-green-50" 
+                  : "border-gray-200 hover:border-gray-300"
+              }`}
+              onClick={() => handleVote(undefined, site.id)}
+            >
+              <div className="flex justify-between items-start">
+                <div>
+                  <h4 className="font-medium">{site.name}</h4>
+                  <p className="text-sm text-muted-foreground">{site.address}</p>
+                  <p className="text-xs text-muted-foreground mt-1">{site.hoursToday}</p>
+                  {site.accessibilityNotes && (
+                    <p className="text-xs text-blue-600 mt-1">{site.accessibilityNotes}</p>
+                  )}
                 </div>
-                <div className="flex gap-2">
-                  <PrimaryButton onClick={handleRSVP}>{hasRSVPd ? 'Leave' : 'RSVP'}</PrimaryButton>
-                  <SecondaryButton onClick={handleRequestCollaborate} disabled={hasRequested}>{hasRequested ? 'Requested' : 'Request to Collaborate'}</SecondaryButton>
+                <div className="text-right">
+                  <div className="text-lg font-bold">{poll?.siteVotes[site.id] || 0}</div>
+                  <div className="text-xs text-muted-foreground">votes</div>
                 </div>
               </div>
-
-              <div className="grid md:grid-cols-2 gap-4">
-                <div>
-                  <h3 className="text-sm font-medium mb-2">Time options</h3>
-                  {event.timeOptions.map((t: string) => (
-                    <div key={t} className="mb-2">
-                      <button
-                        className={`w-full text-left px-4 py-2 rounded-lg border ${selectedTime === t ? 'bg-primary text-white' : ''}`}
-                        onClick={() => handleVote(t, undefined)}
-                      >
-                        <div className="flex justify-between">
-                          <span>{formatTimeLabel(t)}</span>
-                          <span className="text-sm text-muted-foreground">{poll.timeVotes[t] || 0} votes</span>
-                        </div>
-                      </button>
-                    </div>
-                  ))}
-                </div>
-
-                <div>
-                  <h3 className="text-sm font-medium mb-2">Site options</h3>
-                  {siteOptions.map((s) => (
-                    <div key={s.id} className="mb-2">
-                      <button
-                        className={`w-full text-left px-4 py-2 rounded-lg border ${selectedSite === s.id ? 'bg-primary text-white' : ''}`}
-                        onClick={() => handleVote(undefined, s.id)}
-                      >
-                        <div className="flex justify-between">
-                          <span>{s.name}</span>
-                          <span className="text-sm text-muted-foreground">{poll.siteVotes[s.id] || 0} votes</span>
-                        </div>
-                      </button>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
             </div>
-          </Card>
-
-          {/* Stacked full-width action buttons (original visual) */}
-          <div className="mt-6 space-y-3">
-            {effectiveRole === "donor" ? (
-              <PrimaryButton onClick={handleRequestCollaborate} disabled={hasRequested} className="w-full py-4 rounded-2xl">
-                {hasRequested ? 'Requested - Pending' : 'Request to Collaborate'}
-              </PrimaryButton>
-            ) : (
-              <PrimaryButton onClick={handleRSVP} className="w-full py-4 rounded-2xl">
-                {hasRSVPd ? 'Leave' : 'RSVP'}
-              </PrimaryButton>
-            )}
-
-            <OutlineButton onClick={handleChat} className="w-full py-4 rounded-2xl flex items-center justify-center gap-2">
-              <MessageCircle className="h-5 w-5" /> Open Chat
-            </OutlineButton>
-          </div>
+          ))}
         </div>
-      </main>
+      </Card>
+
+      <Card className="p-6">
+        <h3 className="font-semibold mb-4">Attendees</h3>
+        <div className="flex -space-x-2">
+          {attendees.slice(0, 5).map((attendee) => (
+            <div 
+              key={attendee.id} 
+              className="h-10 w-10 rounded-full bg-green-600 flex items-center justify-center border-2 border-white"
+            >
+              <span className="text-white font-medium">
+                {attendee.name.charAt(0).toUpperCase()}
+              </span>
+            </div>
+          ))}
+          {attendees.length > 5 && (
+            <div className="h-10 w-10 rounded-full bg-gray-200 flex items-center justify-center border-2 border-white">
+              <span className="text-gray-600 font-medium">+{attendees.length - 5}</span>
+            </div>
+          )}
+        </div>
+      </Card>
     </div>
   );
 }

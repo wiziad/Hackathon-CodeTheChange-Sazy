@@ -7,8 +7,7 @@ import {
   Card,
   PrimaryButton,
   OutlineButton,
-  MetraLogo,
-  HamburgerMenu
+  SecondaryButton
 } from "@/components/ui/base";
 
 interface Profile {
@@ -92,158 +91,126 @@ export default function ProfilePage() {
   // Not logged in - show login prompt
   if (!isLoggedIn) {
     return (
-      <div className="min-h-screen bg-background flex flex-col">
-        {/* Header */}
-        <header className="border-b">
-          <div className="container flex h-16 items-center justify-between px-4">
-            <button 
-              onClick={() => router.push('/')} 
-              className="flex items-center gap-3 hover:opacity-80 transition-opacity cursor-pointer"
-            >
-              <MetraLogo />
-              <span className="text-xl font-bold">Metra</span>
-            </button>
-            <HamburgerMenu />
+      <div className="container max-w-md mx-auto">
+        <Card>
+          <div className="p-8 text-center">
+            <div className="h-20 w-20 rounded-full bg-gray-200 flex items-center justify-center mx-auto mb-4">
+              <UserIcon className="h-10 w-10 text-gray-400" />
+            </div>
+            <h2 className="text-2xl font-bold mb-2">View Your Profile</h2>
+            <p className="text-muted-foreground mb-6">
+              Please log in to view your profile and manage your account
+            </p>
+            <div className="space-y-3">
+              <PrimaryButton 
+                className="w-full" 
+                onClick={() => router.push('/auth')}
+              >
+                Log In / Sign Up
+              </PrimaryButton>
+              <OutlineButton 
+                className="w-full" 
+                onClick={() => router.push('/')}
+              >
+                Back to Home
+              </OutlineButton>
+            </div>
           </div>
-        </header>
-
-        {/* Main Content */}
-        <main className="flex-1 p-4 pb-20 md:pb-4 flex items-center justify-center">
-          <div className="container max-w-md mx-auto">
-            <Card>
-              <div className="p-8 text-center">
-                <div className="h-20 w-20 rounded-full bg-gray-200 flex items-center justify-center mx-auto mb-4">
-                  <UserIcon className="h-10 w-10 text-gray-400" />
-                </div>
-                <h2 className="text-2xl font-bold mb-2">View Your Profile</h2>
-                <p className="text-muted-foreground mb-6">
-                  Please log in to view your profile and manage your account
-                </p>
-                <div className="space-y-3">
-                  <PrimaryButton 
-                    className="w-full" 
-                    onClick={() => router.push('/auth')}
-                  >
-                    Log In / Sign Up
-                  </PrimaryButton>
-                  <OutlineButton 
-                    className="w-full" 
-                    onClick={() => router.push('/')}
-                  >
-                    Back to Home
-                  </OutlineButton>
-                </div>
-              </div>
-            </Card>
-          </div>
-        </main>
+        </Card>
       </div>
     );
   }
 
   // Logged in - show profile
   return (
-    <div className="min-h-screen bg-background flex flex-col">
-      {/* Header */}
-      <header className="border-b">
-        <div className="container flex h-16 items-center justify-between px-4">
-          <button 
-            onClick={() => router.push('/')} 
-            className="flex items-center gap-3 hover:opacity-80 transition-opacity cursor-pointer"
-          >
-            <MetraLogo />
-            <span className="text-xl font-bold">Metra</span>
-          </button>
-          <HamburgerMenu />
-        </div>
-      </header>
-
-      {/* Main Content */}
-      <main className="flex-1 p-4 pb-20 md:pb-4">
-        <div className="container max-w-2xl mx-auto space-y-6">
-          <Card>
-            <div className="p-6">
-              <div className="flex flex-col items-center gap-4 mb-6">
-                <div className="relative">
-                  <div className="h-24 w-24 rounded-full bg-green-600 flex items-center justify-center">
-                    <span className="text-3xl font-bold text-white">
-                      {profile?.name.charAt(0).toUpperCase()}
-                    </span>
-                  </div>
-                  {profile?.verified && (
-                    <div className="absolute bottom-0 right-0 h-6 w-6 rounded-full bg-green-500 flex items-center justify-center">
-                      <Shield className="h-4 w-4 text-white" />
-                    </div>
-                  )}
+    <div className="container max-w-2xl mx-auto space-y-6">
+      <Card>
+        <div className="p-6">
+          <div className="flex flex-col items-center gap-4 mb-6">
+            <div className="relative">
+              <div className="h-24 w-24 rounded-full bg-green-600 flex items-center justify-center">
+                <span className="text-3xl font-bold text-white">
+                  {profile?.name.charAt(0).toUpperCase()}
+                </span>
+              </div>
+              {profile?.verified && (
+                <div className="absolute bottom-0 right-0 h-6 w-6 rounded-full bg-green-500 flex items-center justify-center">
+                  <Shield className="h-4 w-4 text-white" />
                 </div>
-                <div className="text-center">
-                  <h2 className="text-xl font-bold flex items-center justify-center gap-2">
-                    {profile?.name}
-                    {profile?.verified && (
-                      <Shield className="h-5 w-5 text-green-500" />
-                    )}
-                  </h2>
-                  <p className="text-sm text-muted-foreground">
-                    {profile?.role === "donor" && "Food Donor"}
-                    {profile?.role === "recipient" && "Food Receiver"}
-                    {profile?.role === "org" && "Organization"}
-                  </p>
+              )}
+            </div>
+            <div className="text-center">
+              <h2 className="text-xl font-bold flex items-center justify-center gap-2">
+                {profile?.name}
+                {profile?.verified && (
+                  <Shield className="h-5 w-5 text-green-500" />
+                )}
+              </h2>
+              <p className="text-sm text-muted-foreground">
+                {profile?.role === "donor" && "Food Donor"}
+                {profile?.role === "recipient" && "Food Receiver"}
+                {profile?.role === "org" && "Organization"}
+              </p>
+            </div>
+          </div>
+          
+          <div className="space-y-4">
+            {profile?.bio && (
+              <div>
+                <h3 className="font-semibold mb-2">About</h3>
+                <p className="text-muted-foreground">{profile.bio}</p>
+              </div>
+            )}
+            
+            <div className="flex items-center justify-center gap-4">
+              <div className="text-center">
+                <div className="flex items-center justify-center gap-1">
+                  <Star className="h-5 w-5 text-yellow-500" />
+                  <span className="font-bold">{profile?.rating?.toFixed(1)}</span>
                 </div>
+                <p className="text-sm text-muted-foreground">Rating</p>
               </div>
               
-              <div className="space-y-4">
-                {profile?.bio && (
-                  <div>
-                    <h3 className="font-semibold mb-2">About</h3>
-                    <p className="text-muted-foreground">{profile.bio}</p>
-                  </div>
-                )}
-                
-                <div className="flex items-center justify-center gap-4">
-                  <div className="text-center">
-                    <div className="flex items-center justify-center gap-1">
-                      <Star className="h-5 w-5 text-yellow-500" />
-                      <span className="font-bold">{profile?.rating?.toFixed(1)}</span>
-                    </div>
-                    <p className="text-sm text-muted-foreground">Rating</p>
-                  </div>
-                  
-                  <div className="text-center">
-                    <div className="font-bold">24</div>
-                    <p className="text-sm text-muted-foreground">Events</p>
-                  </div>
-                  
-                  <div className="text-center">
-                    <div className="font-bold">156</div>
-                    <p className="text-sm text-muted-foreground">Impacted</p>
-                  </div>
-                </div>
-                
-                {profile?.postalCode && (
-                  <div className="flex items-center justify-center gap-2 text-muted-foreground">
-                    <MapPin className="h-4 w-4" />
-                    <span>{profile.postalCode}</span>
-                  </div>
-                )}
+              <div className="text-center">
+                <div className="font-bold">24</div>
+                <p className="text-sm text-muted-foreground">Events</p>
               </div>
               
-              <div className="flex flex-col gap-3 mt-6">
-                <PrimaryButton 
-                  className="w-full" 
-                  onClick={handleSettings}
-                >
-                  <Settings className="h-4 w-4 mr-2" />
-                  Edit Profile & Settings
-                </PrimaryButton>
-                <OutlineButton className="w-full" onClick={handleLogout}>
-                  <LogOut className="h-4 w-4 mr-2" />
-                  Log Out
-                </OutlineButton>
+              <div className="text-center">
+                <div className="font-bold">156</div>
+                <p className="text-sm text-muted-foreground">Impacted</p>
               </div>
             </div>
-          </Card>
+            
+            {profile?.postalCode && (
+              <div className="flex items-center justify-center gap-2 text-muted-foreground">
+                <MapPin className="h-4 w-4" />
+                <span>{profile.postalCode}</span>
+              </div>
+            )}
+          </div>
+          
+          <div className="flex flex-col gap-3 mt-6">
+            <PrimaryButton 
+              className="w-full" 
+              onClick={handleSettings}
+            >
+              <Settings className="h-4 w-4 mr-2" />
+              Edit Profile & Settings
+            </PrimaryButton>
+            <SecondaryButton 
+              className="w-full" 
+              onClick={() => router.push('/feed')}
+            >
+              Back to Home
+            </SecondaryButton>
+            <OutlineButton className="w-full" onClick={handleLogout}>
+              <LogOut className="h-4 w-4 mr-2" />
+              Log Out
+            </OutlineButton>
+          </div>
         </div>
-      </main>
+      </Card>
     </div>
   );
 }

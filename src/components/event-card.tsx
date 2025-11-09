@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { MapPin, Users, Clock } from "lucide-react";
 import { PollChips } from "@/components/poll-chips";
 import { RsvpBar } from "@/components/rsvp-bar";
+import { useRequireAuth } from "@/lib/requireAuth";
 
 interface EventCardProps {
   id: string;
@@ -42,6 +43,8 @@ export function EventCard({
   votedSiteId,
   attendees
 }: EventCardProps) {
+  const requireAuth = useRequireAuth();
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
@@ -73,7 +76,7 @@ export function EventCard({
               <h3 className="text-sm font-medium mb-2">Time Options</h3>
               <PollChips 
                 options={timeOptions} 
-                onVote={(optionId) => onVote("time", optionId)}
+                onVote={(optionId) => requireAuth(() => onVote("time", optionId))}
                 votedOptionId={votedTimeId}
               />
             </div>
@@ -82,7 +85,7 @@ export function EventCard({
               <h3 className="text-sm font-medium mb-2">Site Options</h3>
               <PollChips 
                 options={siteOptions} 
-                onVote={(optionId) => onVote("site", optionId)}
+                onVote={(optionId) => requireAuth(() => onVote("site", optionId))}
                 votedOptionId={votedSiteId}
               />
             </div>
@@ -92,7 +95,7 @@ export function EventCard({
           <RsvpBar 
             rsvpCount={rsvpCount}
             isRsvped={isRsvped}
-            onRsvp={onRsvp}
+            onRsvp={() => requireAuth(onRsvp)}
             attendees={attendees}
           />
           <Button className="w-full" onClick={onViewDetails}>

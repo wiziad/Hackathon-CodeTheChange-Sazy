@@ -1,137 +1,202 @@
-"use client";
+'use client'
+import { useState } from 'react'
+import { useRouter } from 'next/navigation'
+import { Card, PrimaryButton, Input } from '@/components/ui/base'
+import { createClient } from '@/lib/supabase/client'
 
-import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { ThemeToggle } from "@/components/theme-toggle";
-import { Globe } from "lucide-react";
+export default function OnboardingPage() {
+  const router = useRouter()
+  const [step, setStep] = useState(1)
+  const [role, setRole] = useState<'donor' | 'recipient'>('donor')
+  const [postalCode, setPostalCode] = useState('')
+  const [firstName, setFirstName] = useState('')
+  const [lastName, setLastName] = useState('')
+  const [householdSize, setHouseholdSize] = useState(1)
+  const [dietaryTags, setDietaryTags] = useState('')
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
 
-export default function Onboarding() {
-  const router = useRouter();
-  const [postalCode, setPostalCode] = useState("");
-  const [language, setLanguage] = useState("en");
-  const [role, setRole] = useState("");
+  const nextStep = () => {
+    if (step < 3) setStep(step + 1)
+  }
 
-  useEffect(() => {
-    // Get role from localStorage
-    const tempRole = localStorage.getItem("tempRole");
-    if (tempRole) {
-      setRole(tempRole);
-    } else {
-      // If no role, redirect to home
-      router.push("/");
-    }
-  }, [router]);
+  const prevStep = () => {
+    if (step > 1) setStep(step - 1)
+  }
 
-  const handleComplete = () => {
-    // Save user preferences to localStorage
-    localStorage.setItem("postalCode", postalCode);
-    localStorage.setItem("language", language);
-    localStorage.setItem("role", role);
-    localStorage.setItem("onboarded", "true");
+  const handleSubmit = async () => {
+    setLoading(true)
+    setError(null)
     
-    // Redirect based on role
-    if (role === "donor") {
-      router.push("/donor");
-    } else if (role === "receiver") {
-      router.push("/receiver");
-    } else if (role === "org") {
-      router.push("/org");
-    } else {
-      router.push("/feed");
+    try {
+      const supabase = createClient()
+      
+      // Get current user
+      const { data: { user }, error: userError } = await supabase.auth.getUser()
+      
+      if (userError || !user) {
+        throw new Error('No user found')
+      }
+      
+      // Create or update profile
+      const { data, error } = await supabase
+        .from('profiles')
+        .upsert({
+          auth_id: user.id,
+          email: user.email,
+          name: `${firstName} ${lastName}`.trim() || user.email?.split('@')[0] || 'User',
+          first_name: firstName,
+          last_name: lastName,
+          role,
+          postal_code: postalCode,
+          household_size: householdSize,
+          dietary_tags: dietaryTags,
+          visibility: 'public',
+          dm_allowed: true
+        })
+        .select()
+        .single()
+      
+      if (error) {
+        throw new Error(error.message)
+      }
+      
+      console.log('Profile created:', data)
+      
+      // Set flag for welcome animation
+      localStorage.setItem('showWelcomeAnimation', 'true')
+      
+      // Redirect to home
+      router.push('/')
+    } catch (err) {
+      console.error('Onboarding error:', err)
+      setError(err instanceof Error ? err.message : 'An error occurred during onboarding')
+    } finally {
+      setLoading(false)
     }
-  };
+  }
 
   return (
-    <div className="min-h-screen bg-background flex flex-col">
-      {/* Header */}
-      <header className="border-b">
-        <div className="container flex h-16 items-center justify-between px-4">
-          <div className="flex items-center gap-2">
-            <div className="h-8 w-8 rounded-full bg-primary"></div>
-            <span className="text-xl font-bold">Metra</span>
+    <div className="min-h-screen flex items-center justify-center p-6">
+      <Card className="w-full max-w-md p-8">
+        <h1 className="text-2xl font-bold mb-2 text-center">Welcome to Metra</h1>
+        <p className="text-gray-600 mb-6 text-center">Let's set up your profile</p>
+        
+        {error && <div className="bg-red-50 text-red-700 p-3 rounded mb-4">{error}</div>}
+        
+        {step === 1 && (
+          <div>
+            <h2 className="text-lg font-semibold mb-4">Step 1: Your Role</h2>
+            <div className="space-y-4">
+              <button
+                onClick={() => setRole('donor')}
+                className={`w-full p-4 rounded-lg border-2 text-left transition-colors ${
+                  role === 'donor' 
+                    ? 'border-brand-500 bg-brand-50' 
+                    : 'border-gray-200 hover:border-gray-300'
+                }`}
+              >
+                <h3 className="font-medium">Food Donor</h3>
+                <p className="text-sm text-gray-600">Share food with your community</p>
+              </button>
+              <button
+                onClick={() => setRole('recipient')}
+                className={`w-full p-4 rounded-lg border-2 text-left transition-colors ${
+                  role === 'recipient' 
+                    ? 'border-brand-500 bg-brand-50' 
+                    : 'border-gray-200 hover:border-gray-300'
+                }`}
+              >
+                <h3 className="font-medium">Food Recipient</h3>
+                <p className="text-sm text-gray-600">Find food resources in your area</p>
+              </button>
+            </div>
+            <div className="flex justify-end mt-6">
+              <PrimaryButton onClick={nextStep}>Next</PrimaryButton>
+            </div>
           </div>
-          <div className="flex items-center gap-2">
-            <Button variant="ghost" size="icon">
-              <Globe className="h-5 w-5" />
-            </Button>
-            <ThemeToggle />
-          </div>
-        </div>
-      </header>
-
-      {/* Main Content */}
-      <main className="flex-1 flex items-center justify-center p-4">
-        <div className="w-full max-w-md space-y-8">
-          <div className="text-center">
-            <h1 className="text-3xl font-bold tracking-tight">Complete Your Profile</h1>
-            <p className="mt-2 text-muted-foreground">
-              Set up your preferences to get started
-            </p>
-          </div>
-
-          <Card>
-            <CardHeader>
-              <CardTitle>Profile Setup</CardTitle>
-              <CardDescription>
-                Configure your account settings
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="postal-code">Postal Code</Label>
+        )}
+        
+        {step === 2 && (
+          <div>
+            <h2 className="text-lg font-semibold mb-4">Step 2: Location</h2>
+            <div className="space-y-4">
+              <div className="mb-4">
+                <label className="block text-sm font-medium mb-2">Postal Code</label>
                 <Input
-                  id="postal-code"
-                  placeholder="Enter your postal code"
+                  placeholder="e.g., T2X1A1"
                   value={postalCode}
-                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => setPostalCode(e.target.value)}
+                  onChange={(e) => setPostalCode(e.target.value)}
                 />
               </div>
-              
-              <div className="space-y-2">
-                <Label htmlFor="language">Language</Label>
-                <Select value={language} onValueChange={setLanguage}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select language" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="en">English</SelectItem>
-                    <SelectItem value="es">Español</SelectItem>
-                    <SelectItem value="fr">Français</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="role">Role</Label>
-                <Select value={role} onValueChange={setRole}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select role" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="donor">Donor</SelectItem>
-                    <SelectItem value="receiver">Receiver</SelectItem>
-                    <SelectItem value="org">Organization Staff</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            </CardContent>
-            <CardFooter>
-              <Button 
-                className="w-full" 
-                onClick={handleComplete}
-                disabled={!postalCode || !role}
+            </div>
+            <div className="flex justify-between mt-6">
+              <button 
+                onClick={prevStep}
+                className="px-4 py-2 text-brand-600 hover:text-brand-700"
               >
-                Complete Setup
-              </Button>
-            </CardFooter>
-          </Card>
-        </div>
-      </main>
+                Back
+              </button>
+              <PrimaryButton onClick={nextStep}>Next</PrimaryButton>
+            </div>
+          </div>
+        )}
+        
+        {step === 3 && (
+          <div>
+            <h2 className="text-lg font-semibold mb-4">Step 3: About You</h2>
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium mb-2">First Name</label>
+                <Input
+                  placeholder="First name"
+                  value={firstName}
+                  onChange={(e) => setFirstName(e.target.value)}
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-2">Last Name</label>
+                <Input
+                  placeholder="Last name"
+                  value={lastName}
+                  onChange={(e) => setLastName(e.target.value)}
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-2">Household Size</label>
+                <Input
+                  type="number"
+                  min="1"
+                  value={householdSize}
+                  onChange={(e) => setHouseholdSize(parseInt(e.target.value) || 1)}
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-2">Dietary Restrictions (Optional)</label>
+                <Input
+                  placeholder="e.g., Vegetarian, Gluten-free"
+                  value={dietaryTags}
+                  onChange={(e) => setDietaryTags(e.target.value)}
+                />
+              </div>
+            </div>
+            <div className="flex justify-between mt-6">
+              <button 
+                onClick={prevStep}
+                className="px-4 py-2 text-brand-600 hover:text-brand-700"
+              >
+                Back
+              </button>
+              <PrimaryButton 
+                onClick={handleSubmit}
+                disabled={loading}
+              >
+                {loading ? 'Saving...' : 'Complete Setup'}
+              </PrimaryButton>
+            </div>
+          </div>
+        )}
+      </Card>
     </div>
-  );
+  )
 }

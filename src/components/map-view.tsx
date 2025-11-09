@@ -6,19 +6,6 @@ import '@geoapify/geocoder-autocomplete/styles/minimal.css';
 import maplibregl from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
 
-// Hardcoded events with only addresses
-const PLACEHOLDER_EVENTS = [
-  { id: '2', name: 'Community Kitchen', address: 'Beltline, Calgary, AB, Canada' },
-  { id: '3', name: 'Emergency Food Bank', address: 'Bridgeland, Calgary, AB, Canada' },
-  { id: '4', name: 'Youth Shelter Meal Service', address: 'Mission District, Calgary, AB, Canada' },
-  { id: '5', name: 'Senior Center Lunch Program', address: 'Kensington, Calgary, AB, Canada' },
-  { id: '6', name: 'Weekend Soup Kitchen', address: 'Inglewood, Calgary, AB, Canada' },
-  { id: '7', name: 'Community Pantry Distribution', address: 'Forest Lawn, Calgary, AB, Canada' },
-  { id: '8', name: 'Holiday Food Basket Drive', address: 'Riverside, Calgary, AB, Canada' },
-  { id: '9', name: 'Neighbourhood Grocery Assistance', address: 'Acadia, Calgary, AB, Canada' },
-  { id: '10', name: 'Local Farmers Market Donation', address: 'Sunalta, Calgary, AB, Canada' },
-];
-
 interface MapViewProps {
   className?: string;
 }
@@ -46,31 +33,43 @@ export function MapView({ className = "" }: MapViewProps) {
     return () => mapInstance.remove();
   }, [containerRef.current]);
 
-  // Geocode hardcoded events
+  // Fetch events from database
   useEffect(() => {
-    const geocodeEvents = async () => {
+    const fetchEvents = async () => {
       try {
-        const geocoded = await Promise.all(
-          PLACEHOLDER_EVENTS.map(async (event) => {
-            const response = await fetch(
-              `https://api.geoapify.com/v1/geocode/search?text=${encodeURIComponent(event.address)}&apiKey=4d9b9abf044946b59e43d604b5e15812`
-            );
-            const data = await response.json();
-            if (!data.features || data.features.length === 0) return null;
-
-            const [lng, lat] = data.features[0].geometry.coordinates;
-            return { ...event, location: { lat, lng } };
+        const response = await fetch('/api/events');
+        if (!response.ok) {
+          throw new Error('Failed to fetch events');
+        }
+        const data = await response.json();
+        
+        // Extract events with site information
+        const eventsWithSites = (data.events || [])
+          .filter((event: any) => event.sites && event.sites.length > 0)
+          .map((event: any) => {
+            const site = event.sites[0]; // Use the first site
+            return {
+              id: event.id,
+              name: event.title,
+              description: event.description,
+              site: {
+                name: site.name,
+                address: site.address,
+                lat: site.lat,
+                lng: site.lng
+              }
+            };
           })
-        );
+          .filter((event: any) => event.site.lat && event.site.lng); // Only events with valid coordinates
 
-        setEventsWithCoordinates(geocoded.filter((e) => e !== null));
+        setEventsWithCoordinates(eventsWithSites);
       } catch (err) {
         console.error(err);
-        setError("Failed to geocode events.");
+        setError("Failed to fetch events.");
       }
     };
 
-    geocodeEvents();
+    fetchEvents();
   }, []);
 
   // Add markers when map and events are ready
@@ -83,10 +82,14 @@ export function MapView({ className = "" }: MapViewProps) {
 
     const newMarkers = eventsWithCoordinates.map(event => {
       const marker = new maplibregl.Marker({ color: "#FF0000" })
-        .setLngLat([event.location.lng, event.location.lat])
+        .setLngLat([event.site.lng, event.site.lat])
         .setPopup(new maplibregl.Popup().setHTML(`
-          <h3>${event.name}</h3>
-          <p>${event.address}</p>
+          <div>
+            <h3 class="font-bold">${event.name}</h3>
+            <p>${event.site.name}</p>
+            <p>${event.site.address}</p>
+            ${event.description ? `<p class="mt-2 text-sm">${event.description}</p>` : ''}
+          </div>
         `))
         .addTo(map);
       return marker;

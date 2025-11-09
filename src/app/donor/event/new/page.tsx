@@ -12,6 +12,7 @@ import {
   MetraLogo,
   HamburgerMenu
 } from "@/components/ui/base";
+import { useAuth } from '@/providers/auth-provider';
 
 interface Item {
   categoryId: string;
@@ -20,6 +21,7 @@ interface Item {
 
 export default function NewEvent() {
   const router = useRouter();
+  const { user } = useAuth();
   const [step, setStep] = useState(1);
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
@@ -82,19 +84,62 @@ export default function NewEvent() {
     setSites(newSites);
   };
 
-  const handlePublish = () => {
-    // In a real app, this would be an API call
-    console.log("Publishing event:", {
-      title,
-      description,
-      items,
-      timeWindows,
-      sites,
-      visibility
-    });
-    
-    // Redirect to donor events page
-    router.push("/donor/my-events");
+  const handlePublish = async () => {
+    try {
+      if (!user?.id) {
+        localStorage.setItem('metra_return_to', '/donor/event/new');
+        router.push('/auth');
+        return;
+      }
+
+      // Store locally first to ensure it persists
+      const newEvent = {
+        id: String(Date.now()),
+        title,
+        description,
+        status: 'open',
+        createdAt: new Date().toISOString(),
+        items: items.map(it => String(it.categoryId)),
+        rsvpCount: 0
+      };
+
+      try {
+        const ls = JSON.parse(localStorage.getItem('metra_events') || '[]');
+        ls.push(newEvent);
+        localStorage.setItem('metra_events', JSON.stringify(ls));
+      } catch (e) {
+        localStorage.setItem('metra_events', JSON.stringify([newEvent]));
+      }
+
+      // Try backend API (will fail gracefully if not ready)
+      try {
+        const res = await fetch('/api/events', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            title,
+            description,
+            creator_id: user.id,
+            capacity: null,
+            items,
+            timeOptions: timeWindows,
+            siteOptions: sites,
+            visibility,
+          }),
+        });
+        if (res.ok) {
+          const data = await res.json();
+          console.log('Event created on backend:', data);
+        }
+      } catch (apiError) {
+        console.log('Backend not ready, using local storage only');
+      }
+
+      router.push('/donor/my-events');
+    } catch (e) {
+      console.error('Publish error:', e);
+      router.push('/donor/my-events');
+    }
   };
 
   return (

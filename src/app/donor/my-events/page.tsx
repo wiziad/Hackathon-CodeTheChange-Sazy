@@ -10,6 +10,7 @@ import {
   MetraLogo,
   HamburgerMenu
 } from "@/components/ui/base";
+import { useAuth } from '@/providers/auth-provider';
 
 interface Event {
   id: string;
@@ -25,6 +26,7 @@ interface Event {
 
 export default function MyEvents() {
   const router = useRouter();
+  const { user } = useAuth();
   const [events, setEvents] = useState<Event[]>([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<"all" | "finalized" | "completed" | "requests">("all");
@@ -33,65 +35,91 @@ export default function MyEvents() {
     fetchEvents();
   }, []);
 
-  // Load collaboration requests from localStorage
+  // Load collaboration requests from API
   useEffect(() => {
-    try {
-      const stored = JSON.parse(localStorage.getItem("collab_requests") || "[]");
-      setRequests(stored);
-    } catch (e) {
-      setRequests([]);
-    }
-  }, []);
+    const loadRequests = async () => {
+      try {
+        if (!user?.id) return;
+        const res = await fetch(`/api/collab-requests?organizerId=${user.id}`);
+        if (!res.ok) {
+          console.log('Backend not ready for collaboration requests');
+          setRequests([]);
+          return;
+        }
+        const data = await res.json();
+        const list = (data.requests || []).map((r: any) => ({
+          id: r.id,
+          eventId: r.event_id,
+          title: r.events?.title || 'Event',
+          status: r.status,
+        }));
+        setRequests(list);
+      } catch (e) {
+        console.log('Backend not ready for collaboration requests');
+        setRequests([]);
+      }
+    };
+    loadRequests();
+  }, [user]);
 
   const fetchEvents = async () => {
+    // Load from localStorage first
     try {
-      // Mock data - in a real app, this would be an API call
-      const mockEvents: Event[] = [
-        {
-          id: "1",
-          title: "Weekend Food Drive",
-          description: "Community food donation event for local families",
-          status: "finalized",
-          createdAt: new Date(Date.now() - 86400000).toISOString(),
-          timeWindow: "Saturday 2:00-4:00 PM",
-          site: "Community Center",
-          rsvpCount: 12,
-          items: ["Fresh Produce", "Canned Goods", "Bakery"]
-        },
-        {
-          id: "2",
-          title: "Monthly Pantry Collection",
-          description: "Regular monthly food collection",
-          status: "voting",
-          createdAt: new Date(Date.now() - 172800000).toISOString(),
-          rsvpCount: 8,
-          items: ["Canned Goods", "Grains", "Dairy"]
-        },
-        {
-          id: "3",
-          title: "Holiday Food Share",
-          description: "Special holiday event to share meals",
-          status: "draft",
-          createdAt: new Date(Date.now() - 259200000).toISOString(),
-          rsvpCount: 0,
-          items: ["Fresh Produce", "Bakery", "Meat"]
-        }
-      ];
-      
-      setEvents(mockEvents);
-      setLoading(false);
-    } catch (error) {
-      console.error("Error fetching events:", error);
-      setLoading(false);
+      const ls = JSON.parse(localStorage.getItem('metra_events') || '[]');
+      if (ls.length > 0) {
+        setEvents(ls);
+      }
+    } catch (e) {
+      console.log('No local events found');
     }
+
+    // Try to load from API (will fail gracefully if backend not ready)
+    try {
+      const res = await fetch('/api/events');
+      if (!res.ok) {
+        console.log('Backend not ready, using local storage only');
+        setLoading(false);
+        return;
+      }
+      const data = await res.json();
+      const list: Event[] = (data.events || []).map((ev: any) => ({
+        id: String(ev.id),
+        title: ev.title,
+        description: ev.description ?? '',
+        status: (ev.status as any) || 'open',
+        createdAt: ev.created_at || new Date().toISOString(),
+        timeWindow: (ev.event_time_options && ev.event_time_options[0]?.option_id) ? ev.event_time_options[0].option_id : undefined,
+        site: (ev.event_site_options && ev.event_site_options[0]?.site_id) ? String(ev.event_site_options[0].site_id) : undefined,
+        rsvpCount: 0,
+        items: (ev.event_items || []).map((it: any) => String(it.category_id)),
+      }));
+      if (list.length > 0) {
+        setEvents(list);
+      }
+    } catch (error) {
+      console.log('Backend not ready, using local storage only');
+    }
+    setLoading(false);
   };
 
   // Manage collaboration requests
   const [requests, setRequests] = useState<Array<{id:string,eventId:string,title:string,status:string}>>([]);
-  const handleRequestAction = (id: string, action: "accept" | "decline") => {
-    const updated = requests.map(r => r.id === id ? { ...r, status: action } : r);
-    setRequests(updated);
-    localStorage.setItem("collab_requests", JSON.stringify(updated));
+  const handleRequestAction = async (id: string, action: "accept" | "decline") => {
+    try {
+      const res = await fetch(`/api/collab-requests/${id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: action, decided_by: user?.id || null })
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setRequests(prev => prev.map(r => r.id === id ? { ...r, status: action } : r));
+      } else {
+        console.error('Update request failed:', data);
+      }
+    } catch (e) {
+      console.error('Update request error:', e);
+    }
   };
 
   const getStatusBadge = (status: string) => {

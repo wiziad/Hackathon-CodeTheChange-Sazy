@@ -11,11 +11,13 @@ import {
   OutlineButton,
   MetraLogo
 } from "@/components/ui/base";
+import { useAuth } from '@/providers/auth-provider';
 
 export default function ReceiverEventPage({ params }: { params: { eventId: string } | Promise<{ eventId: string }> }) {
   const router = useRouter();
   const resolved = use(params as any) as { eventId: string };
   const eventId = resolved?.eventId;
+  const { user } = useAuth();
   const [event, setEvent] = useState<any | null>(null);
   const [creator, setCreator] = useState<any | null>(null);
   const [poll, setPoll] = useState<any | null>(null);
@@ -43,80 +45,69 @@ export default function ReceiverEventPage({ params }: { params: { eventId: strin
 
   const fetchEventDetails = async () => {
     try {
-      const mockEvent = {
-        id: eventId,
-        creatorId: "1",
-        title: "Weekend Food Drive",
-        description: "Join us for our weekly food drive to support local families in need. We're collecting non-perishable food items to distribute to families in need in our community. All donations are welcome!",
-        items: [
-          { categoryId: "1", targetQty: 10 },
-          { categoryId: "2", targetQty: 20 },
-          { categoryId: "3", targetQty: 15 }
-        ],
-        timeOptions: ["today_11_13", "today_13_15", "tomorrow_09_11"],
-        siteOptions: ["1", "2"],
-        visibility: "public",
-        rsvpCount: 5,
-        rsvps: ["1", "2", "3"],
-        distanceKm: 1.2,
-        createdAt: new Date().toISOString(),
-        status: "open"
-      };
+      const res = await fetch(`/api/events/${eventId}`);
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Failed to load event');
+      const ev = data.event;
+      const items = (ev.event_items || []).map((it: any) => ({ categoryId: String(it.category_id), targetQty: Number(it.target_qty) || 0 }));
+      const timeOptions = (ev.event_time_options || []).map((to: any) => to.option_id);
+      const siteOptionsIds = (ev.event_site_options || []).map((so: any) => String(so.site_id));
+      const siteOpts = siteOptionsIds.map((id: string) => ({ id, name: `Site ${id}` }));
 
-      const mockCreator = {
-        id: "1",
-        name: "Alice Johnson",
-        role: "donor",
-        bio: "Passionate about reducing food waste",
-        photoUrl: "https://example.com/alice.jpg",
-        rating: 4.8,
-        verified: true,
-        visibility: "public",
-        dmAllowed: true,
-        postalCode: "T2X1A1"
-      };
+      setEvent({
+        id: String(ev.id),
+        creatorId: String(ev.creator_id || ''),
+        title: ev.title,
+        description: ev.description ?? '',
+        items,
+        timeOptions,
+        siteOptions: siteOptionsIds,
+        visibility: ev.visibility || 'public',
+        rsvpCount: 0,
+        rsvps: [],
+        distanceKm: undefined,
+        createdAt: ev.created_at || new Date().toISOString(),
+        status: ev.status || 'open'
+      });
 
-      const mockPoll = {
-        eventId: eventId,
-        timeVotes: {
-          "today_11_13": 3,
-          "today_13_15": 2,
-          "tomorrow_09_11": 1
-        },
-        siteVotes: {
-          "1": 4,
-          "2": 2
-        },
-        voterIds: ["1", "2", "3"]
-      };
-
-      const mockSiteOptions = [
-        { id: "1", name: "Community Center" },
-        { id: "2", name: "City Park Pavilion" }
-      ];
-
-      const mockAttendees = [ { id: "1", name: "Alice Johnson" } ];
-
-      setEvent(mockEvent);
-      setCreator(mockCreator);
-      setPoll(mockPoll);
-      setSiteOptions(mockSiteOptions);
-      setAttendees(mockAttendees);
+      setCreator({ id: String(ev.creator_id || ''), name: 'Organizer', role: 'donor' });
+      setPoll({ eventId, timeVotes: {}, siteVotes: {}, voterIds: [] });
+      setSiteOptions(siteOpts);
+      setAttendees([]);
       setLoading(false);
     } catch (error) {
-      console.error("Error fetching event details:", error);
+      console.error('Error fetching event details:', error);
       setLoading(false);
     }
   };
 
   const handleRSVP = async () => {
-    if (!event) return;
-    if (hasRSVPd) {
-      setEvent({ ...event, rsvpCount: Math.max(0, event.rsvpCount - 1), rsvps: event.rsvps.filter((id: string) => id !== "current-user") });
-      setHasRSVPd(false);
-    } else {
-      setEvent({ ...event, rsvpCount: event.rsvpCount + 1, rsvps: [...event.rsvps, "current-user"] });
-      setHasRSVPd(true);
+    try {
+      if (!event) return;
+      if (!user?.id) {
+        localStorage.setItem('metra_return_to', `/receiver/event/${eventId}`);
+        router.push('/auth');
+        return;
+      }
+      const res = await fetch(`/api/events/${eventId}/rsvps`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ user_id: user.id })
+      });
+      const data = await res.json();
+      if (res.ok) {
+        if (data.toggled === 'removed') {
+          setEvent({ ...event, rsvpCount: Math.max(0, event.rsvpCount - 1), rsvps: (event.rsvps || []).filter((id: string) => id !== user.id) });
+          setHasRSVPd(false);
+        } else {
+          setEvent({ ...event, rsvpCount: (event.rsvpCount || 0) + 1, rsvps: [...(event.rsvps || []), user.id] });
+          setHasRSVPd(true);
+        }
+      } else {
+        console.error('RSVP failed:', data);
+      }
+    } catch (e) {
+      console.error('RSVP error:', e);
     }
   };
 

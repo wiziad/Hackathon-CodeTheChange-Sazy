@@ -67,99 +67,38 @@ export default function EventDetailPage({ params }: { params: Promise<{ eventId:
 
   const fetchEventDetails = async () => {
     try {
-      const mockEvent = {
-        id: eventId,
-        creatorId: "1",
-        title: "Weekend Food Drive",
-        description: "Join us for our weekly food drive to support local families in need. We're collecting non-perishable food items to distribute to families in need in our community. All donations are welcome!",
-        items: [
-          { categoryId: "1", targetQty: 10 },
-          { categoryId: "2", targetQty: 20 },
-          { categoryId: "3", targetQty: 15 }
-        ],
-        timeOptions: ["today_11_13", "today_13_15", "tomorrow_09_11"],
-        siteOptions: ["1", "2"],
-        visibility: "public",
-        rsvpCount: 5,
-        rsvps: ["1", "2", "3"],
-        distanceKm: 1.2,
-        createdAt: new Date().toISOString(),
-        status: "open"
-      };
+      const res = await fetch(`/api/events/${eventId}`);
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Failed to load event');
+      const ev = data.event;
+      const items = (ev.event_items || []).map((it: any) => ({ categoryId: String(it.category_id), targetQty: Number(it.target_qty) || 0 }));
+      const timeOptions = (ev.event_time_options || []).map((to: any) => to.option_id);
+      const siteOptionsIds = (ev.event_site_options || []).map((so: any) => String(so.site_id));
+      const siteOptions = siteOptionsIds.map((id: string) => ({ id, name: `Site ${id}` }));
 
-      const mockCreator = {
-        id: "1",
-        name: "Alice Johnson",
-        role: "donor",
-        bio: "Passionate about reducing food waste",
-        photoUrl: "https://example.com/alice.jpg",
-        rating: 4.8,
-        verified: true,
-        visibility: "public",
-        dmAllowed: true,
-        postalCode: "T2X1A1"
-      };
+      setEvent({
+        id: String(ev.id),
+        creatorId: String(ev.creator_id || ''),
+        title: ev.title,
+        description: ev.description ?? '',
+        items,
+        timeOptions,
+        siteOptions: siteOptionsIds,
+        visibility: ev.visibility || 'public',
+        rsvpCount: 0,
+        rsvps: [],
+        distanceKm: undefined,
+        createdAt: ev.created_at || new Date().toISOString(),
+        status: ev.status || 'open'
+      });
 
-      const mockPoll = {
-        eventId: eventId,
-        timeVotes: {
-          "today_11_13": 3,
-          "today_13_15": 2,
-          "tomorrow_09_11": 1
-        },
-        siteVotes: {
-          "1": 4,
-          "2": 2
-        },
-        voterIds: ["1", "2", "3"]
-      };
-
-      const mockSiteOptions = [
-        {
-          id: "1",
-          name: "Community Center",
-          address: "123 Main St",
-          postalCode: "T2X1A1",
-          lat: 51.0447,
-          lng: -114.0669,
-          hoursToday: "9:00 AM - 5:00 PM",
-          accessibilityNotes: "Wheelchair accessible entrance"
-        },
-        {
-          id: "2",
-          name: "City Park Pavilion",
-          address: "456 Park Ave",
-          postalCode: "T2X1A1",
-          lat: 51.0450,
-          lng: -114.0600,
-          hoursToday: "8:00 AM - 8:00 PM",
-          accessibilityNotes: "Accessible parking available"
-        }
-      ];
-
-      const mockAttendees = [
-        {
-          id: "1",
-          name: "Alice Johnson",
-          role: "donor",
-          bio: "Passionate about reducing food waste",
-          photoUrl: "https://example.com/alice.jpg",
-          rating: 4.8,
-          verified: true,
-          visibility: "public",
-          dmAllowed: true,
-          postalCode: "T2X1A1"
-        }
-      ];
-
-      setEvent(mockEvent);
-      setCreator(mockCreator);
-      setPoll(mockPoll);
-      setSiteOptions(mockSiteOptions);
-      setAttendees(mockAttendees);
+      setCreator({ id: String(ev.creator_id || ''), name: 'Organizer', role: 'donor' });
+      setPoll({ eventId, timeVotes: {}, siteVotes: {}, voterIds: [] });
+      setSiteOptions(siteOptions);
+      setAttendees([]);
       setLoading(false);
     } catch (error) {
-      console.error("Error fetching event details:", error);
+      console.error('Error fetching event details:', error);
       setLoading(false);
     }
   };

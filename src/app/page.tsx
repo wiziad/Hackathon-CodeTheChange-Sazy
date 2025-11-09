@@ -19,7 +19,7 @@ export default function SplashPage() {
         if (session) {
           router.replace('/home');
         } else {
-          router.replace('/home');;
+          router.replace('/home');
         }
         setShowSplash(false);
       }
@@ -29,7 +29,7 @@ export default function SplashPage() {
   }, [session, loading, router]);
 
   if (!showSplash) {
-    return <div className="min-h-screen bg-brand-50 flex items-center justify-center">Redirecting...</div>;
+    return null;
   }
 
   return (

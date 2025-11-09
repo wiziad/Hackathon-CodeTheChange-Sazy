@@ -7,7 +7,7 @@ import { useAuth } from '@/providers/auth-provider';
 
 export default function DonorHome() {
   const router = useRouter();
-  const { profile } = useAuth();
+  const { profile, user } = useAuth();
   const [postalCode, setPostalCode] = useState("");
   const [requested, setRequested] = useState<Record<string, boolean>>({});
   
@@ -17,16 +17,27 @@ export default function DonorHome() {
     console.log("Filtering events for postal code:", e.target.value);
   };
 
-  const requestCollaborate = (eventId: string, title: string) => {
-    const req = { id: `${eventId}-${Date.now()}`, eventId, title, status: "pending" };
+  const requestCollaborate = async (eventId: string, title: string) => {
     try {
-      const existing = JSON.parse(localStorage.getItem("collab_requests") || "[]");
-      existing.push(req);
-      localStorage.setItem("collab_requests", JSON.stringify(existing));
+      if (!user?.id) {
+        localStorage.setItem('metra_return_to', `/donor/event/${eventId}`);
+        router.push('/auth');
+        return;
+      }
+      const res = await fetch(`/api/events/${eventId}/collab-requests`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ donor_id: user.id }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setRequested(prev => ({ ...prev, [eventId]: true }));
+      } else {
+        console.error('Collab request failed:', data);
+      }
     } catch (e) {
-      localStorage.setItem("collab_requests", JSON.stringify([req]));
+      console.error('Collab request error:', e);
     }
-    setRequested(prev => ({ ...prev, [eventId]: true }));
   };
   
   return (

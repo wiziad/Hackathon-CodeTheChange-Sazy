@@ -14,6 +14,7 @@ export default function HomePage() {
   const [initialLoadTimeout, setInitialLoadTimeout] = useState(false);
   const [postalCode, setPostalCode] = useState("");
   const [requested, setRequested] = useState<Record<string, boolean>>({});
+  const [events, setEvents] = useState<any[]>([]);
   const displayName = profile?.name || user?.user_metadata?.full_name || user?.email?.split('@')[0] || '';
 
   useEffect(() => {
@@ -25,6 +26,46 @@ export default function HomePage() {
     }, 2000);
     
     return () => clearTimeout(timeout);
+  }, []);
+
+  // Load events from localStorage and API
+  useEffect(() => {
+    const loadEvents = async () => {
+      // Load from localStorage first
+      try {
+        const ls = JSON.parse(localStorage.getItem('metra_events') || '[]');
+        if (ls.length > 0) {
+          setEvents(ls);
+        }
+      } catch (e) {
+        console.log('No local events found');
+      }
+
+      // Try to load from API
+      try {
+        const res = await fetch('/api/events');
+        if (!res.ok) {
+          console.log('Backend not ready, using local storage only');
+          return;
+        }
+        const data = await res.json();
+        const list = (data.events || []).map((ev: any) => ({
+          id: String(ev.id),
+          title: ev.title,
+          description: ev.description ?? '',
+          status: ev.status || 'open',
+          createdAt: ev.created_at || new Date().toISOString(),
+          items: (ev.event_items || []).map((it: any) => String(it.category_id)),
+          rsvpCount: 0
+        }));
+        if (list.length > 0) {
+          setEvents(list);
+        }
+      } catch (error) {
+        console.log('Backend not ready, using local storage only');
+      }
+    };
+    loadEvents();
   }, []);
 
   // Check if we should show the welcome animation
@@ -52,16 +93,27 @@ export default function HomePage() {
     console.log("Filtering events for postal code:", e.target.value);
   };
 
-  const requestCollaborate = (eventId: string, title: string) => {
-    const req = { id: `${eventId}-${Date.now()}`, eventId, title, status: "pending" };
+  const requestCollaborate = async (eventId: string, title: string) => {
     try {
-      const existing = JSON.parse(localStorage.getItem("collab_requests") || "[]");
-      existing.push(req);
-      localStorage.setItem("collab_requests", JSON.stringify(existing));
+      if (!user?.id) {
+        localStorage.setItem('metra_return_to', `/donor/event/${eventId}`);
+        router.push('/auth');
+        return;
+      }
+      const res = await fetch(`/api/events/${eventId}/collab-requests`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ donor_id: user.id }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setRequested(prev => ({ ...prev, [eventId]: true }));
+      } else {
+        console.error('Collab request failed:', data);
+      }
     } catch (e) {
-      localStorage.setItem("collab_requests", JSON.stringify([req]));
+      console.error('Collab request error:', e);
     }
-    setRequested(prev => ({ ...prev, [eventId]: true }));
   };
 
   // If user is logged in, they'll be redirected by the effect above
@@ -122,37 +174,27 @@ export default function HomePage() {
           <Card className="p-4">
             <h2 className="text-xl font-bold mb-3">Suggested events</h2>
             <div className="grid md:grid-cols-2 gap-4">
-              <div onClick={() => router.push("/donor/event/1")} className="cursor-pointer">
-                <EventCard 
-                  title="Fresh Produce Drop-Off" 
-                  description="Local garden share" 
-                  distance="0.8 km" 
-                  time="Today, 2-4 PM" 
-                  attendees={12} 
-                  capacity={20} 
-                  items={["Vegetables","Fruits","Bread"]}
-                  actionLabel="Request to Collaborate"
-                  pendingLabel="Requested - Pending"
-                  pending={requested["1"]}
-                  onRsvp={() => requestCollaborate("1", "Fresh Produce Drop-Off")}
-                />
-              </div>
-              <div onClick={() => router.push("/donor/event/2")} className="cursor-pointer">
-                <EventCard 
-                  title="Community Food Drive" 
-                  description="Monthly collection" 
-                  distance="1.2 km" 
-                  time="Tomorrow, 10 AM-12 PM" 
-                  attendees={8} 
-                  capacity={15} 
-                  items={["Canned Goods","Grains","Protein"]}
-
-                  actionLabel="Request to Collaborate"
-                  pendingLabel="Requested - Pending"
-                  pending={requested["2"]}
-                  onRsvp={() => requestCollaborate("2", "Community Food Drive")}
-                />
-              </div>
+              {events.length === 0 ? (
+                <p className="text-muted-foreground col-span-2">No events available yet. Create one!</p>
+              ) : (
+                events.slice(0, 4).map((event) => (
+                  <div key={event.id} onClick={() => router.push(`/donor/event/${event.id}`)} className="cursor-pointer">
+                    <EventCard 
+                      title={event.title}
+                      description={event.description || 'Event'}
+                      distance="N/A"
+                      time="TBD"
+                      attendees={event.rsvpCount || 0}
+                      capacity={20}
+                      items={event.items || []}
+                      actionLabel="Request to Collaborate"
+                      pendingLabel="Requested - Pending"
+                      pending={requested[event.id]}
+                      onRsvp={() => requestCollaborate(event.id, event.title)}
+                    />
+                  </div>
+                ))
+              )}
             </div>
           </Card>
         </div>
@@ -205,12 +247,23 @@ export default function HomePage() {
           <Card className="p-4 mb-6">
             <h2 className="text-xl font-bold mb-3">Events near you</h2>
             <div className="space-y-3">
-              <div onClick={() => router.push("/receiver/event/1")} className="cursor-pointer">
-                <EventCard title="Afternoon Drop" description="Southview Centre" distance="0.9 km" time="Today, 2-4 PM" attendees={10} capacity={18} items={["Grains","Produce"]} />
-              </div>
-              <div onClick={() => router.push("/receiver/event/2")} className="cursor-pointer">
-                <EventCard title="Protein Help" description="Forest Lawn Library" distance="1.4 km" time="Today, 4-6 PM" attendees={7} capacity={15} items={["Canned Tuna","Beans"]} />
-              </div>
+              {events.length === 0 ? (
+                <p className="text-muted-foreground">No events available yet.</p>
+              ) : (
+                events.slice(0, 4).map((event) => (
+                  <div key={event.id} onClick={() => router.push(`/receiver/event/${event.id}`)} className="cursor-pointer">
+                    <EventCard 
+                      title={event.title}
+                      description={event.description || 'Event'}
+                      distance="N/A"
+                      time="TBD"
+                      attendees={event.rsvpCount || 0}
+                      capacity={20}
+                      items={event.items || []}
+                    />
+                  </div>
+                ))
+              )}
             </div>
             <OutlineButton onClick={() => router.push("/feed")} className="mt-4">Open Feed</OutlineButton>
           </Card>

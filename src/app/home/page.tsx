@@ -133,153 +133,8 @@ export default function HomePage() {
     );
   }
 
-  // Donor home content
-  if (userRole === 'donor') {
-    return (
-      <div className="min-h-screen bg-brand-50 text-brand-900">
-
-
-        <AnimatePresence>
-          {showWelcome && isClient && (
-            <motion.div
-              initial={{ opacity: 0, y: -50 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -50 }}
-              transition={{ duration: 0.3 }}
-              className="fixed top-20 left-1/2 transform -translate-x-1/2 z-50"
-            >
-              <div className="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded-lg shadow-lg">
-                <p className="font-bold">Welcome back{profile?.name ? `, ${profile.name}` : ''}!</p>
-              </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
-
-        <div className="max-w-7xl mx-auto px-4 py-8">
-          <div className="bg-gradient-to-br from-brand-100 to-white p-6 rounded-2xl mb-6">
-            <h1 className="text-3xl font-bold mb-2">Welcome back, {profile?.name || 'Donor'}!</h1>
-            <p className="text-brand-700">Best times to donate today: <span className="font-semibold text-brand-600">2-4 PM, 4-6 PM</span></p>
-          </div>
-
-          <div className="mb-6">
-            <label htmlFor="postalCode" className="block text-sm font-medium mb-2">Enter your postal code to find nearby events</label>
-            <Input
-              id="postalCode"
-              type="text"
-              placeholder="e.g., T2X1A1"
-              value={postalCode}
-              onChange={handlePostalCodeChange}
-              icon={<MapPin size={18} />}
-            />
-          </div>
-
-          <div className="flex gap-3 mb-6">
-            <PrimaryButton onClick={() => router.push("/donor/event/new")} className="flex-1">Create Event</PrimaryButton>
-            <SecondaryButton onClick={() => router.push("/donor/my-events")}>My Events</SecondaryButton>
-          </div>
-
-          <Card className="p-4">
-            <h2 className="text-xl font-bold mb-3">Suggested events</h2>
-            <div className="grid md:grid-cols-2 gap-4">
-              {events.length === 0 ? (
-                <p className="text-muted-foreground col-span-2">No events available yet. Create one!</p>
-              ) : (
-                events.slice(0, 4).map((event) => (
-                  <div key={event.id} onClick={() => router.push(`/donor/event/${event.id}`)} className="cursor-pointer">
-                    <EventCard 
-                      title={event.title}
-                      description={event.description || 'Event'}
-                      distance="N/A"
-                      time="TBD"
-                      attendees={event.rsvpCount || 0}
-                      capacity={20}
-                      items={event.items || []}
-                      actionLabel="Request to Collaborate"
-                      pendingLabel="Requested - Pending"
-                      pending={requested[event.id]}
-                      onRsvp={() => requestCollaborate(event.id, event.title)}
-                    />
-                  </div>
-                ))
-              )}
-            </div>
-          </Card>
-        </div>
-      </div>
-    );
-  }
-
-  // Receiver home content
-  if (userRole === 'receiver' || userRole === 'recipient') {
-    const bestWindowLabel = "2-4 PM";
-    
-    return (
-      <div className="min-h-screen bg-brand-50 text-brand-900">
-
-
-        <AnimatePresence>
-          {showWelcome && isClient && (
-            <motion.div
-              initial={{ opacity: 0, y: -50 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -50 }}
-              transition={{ duration: 0.3 }}
-              className="fixed top-20 left-1/2 transform -translate-x-1/2 z-50"
-            >
-              <div className="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded-lg shadow-lg">
-                <p className="font-bold">Welcome back{profile?.name ? `, ${profile.name}` : ''}!</p>
-              </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
-
-        <div className="max-w-7xl mx-auto px-4 py-8">
-          <div className="bg-gradient-to-br from-brand-100 to-white p-6 rounded-2xl mb-6">
-            <h1 className="text-2xl font-bold mb-1">Find nearby food, {profile?.name || 'Friend'}</h1>
-            <p className="text-brand-700">Best time to go today: <span className="font-semibold text-brand-600">{bestWindowLabel}</span></p>
-          </div>
-
-          <div className="mb-6">
-            <label htmlFor="postalCode" className="block text-sm font-medium mb-2">Enter your postal code to find nearby events</label>
-            <Input
-              id="postalCode"
-              type="text"
-              placeholder="e.g., T2X1A1"
-              value={postalCode}
-              onChange={handlePostalCodeChange}
-              icon={<MapPin size={18} />}
-            />
-          </div>
-
-          <Card className="p-4 mb-6">
-            <h2 className="text-xl font-bold mb-3">Events near you</h2>
-            <div className="space-y-3">
-              {events.length === 0 ? (
-                <p className="text-muted-foreground">No events available yet.</p>
-              ) : (
-                events.slice(0, 4).map((event) => (
-                  <div key={event.id} onClick={() => router.push(`/receiver/event/${event.id}`)} className="cursor-pointer">
-                    <EventCard 
-                      title={event.title}
-                      description={event.description || 'Event'}
-                      distance="N/A"
-                      time="TBD"
-                      attendees={event.rsvpCount || 0}
-                      capacity={20}
-                      items={event.items || []}
-                    />
-                  </div>
-                ))
-              )}
-            </div>
-            <OutlineButton onClick={() => router.push("/feed")} className="mt-4">Open Feed</OutlineButton>
-          </Card>
-        </div>
-      </div>
-    );
-  }
-
-  // Guest/homepage content
+  // Show the landing page for all users (guests, donors, and recipients)
+  // But add role-specific functionality
   return (
     <div className="min-h-screen bg-brand-50 text-brand-900">
       
@@ -310,7 +165,7 @@ export default function HomePage() {
             : 'How would you like to help today?'}
         </h1>
 
-        {(!authLoading || initialLoadTimeout) && (!profile || !profile?.role) && (
+        {(!authLoading || initialLoadTimeout) && (
           <>
             <div className="grid md:grid-cols-2 gap-6 mb-8">
               <Card className="p-8 hover:border-brand-500 cursor-pointer transition-all duration-200 group">
@@ -320,7 +175,18 @@ export default function HomePage() {
                   </div>
                   <h2 className="text-2xl font-bold mb-2">I want to donate</h2>
                   <p className="text-brand-700 mb-4">Share food and help your neighbors</p>
-                  <PrimaryButton onClick={() => router.push("/donor")} data-testid="landing-primary-cta">Get Started as Donor</PrimaryButton>
+                  <PrimaryButton 
+                    onClick={() => {
+                      if (userRole === 'donor') {
+                        router.push("/donor/event/new");
+                      } else {
+                        router.push("/donor");
+                      }
+                    }} 
+                    data-testid="landing-primary-cta"
+                  >
+                    {userRole === 'donor' ? 'Create Event' : 'Get Started as Donor'}
+                  </PrimaryButton>
                 </div>
               </Card>
 
@@ -331,7 +197,17 @@ export default function HomePage() {
                   </div>
                   <h2 className="text-2xl font-bold mb-2">I need food today</h2>
                   <p className="text-brand-700 mb-4">Find nearby food and connect with donors</p>
-                  <PrimaryButton onClick={() => router.push("/receiver")}>Get Started as Recipient</PrimaryButton>
+                  <PrimaryButton 
+                    onClick={() => {
+                      if (userRole === 'receiver' || userRole === 'recipient') {
+                        router.push("/feed");
+                      } else {
+                        router.push("/receiver");
+                      }
+                    }}
+                  >
+                    {userRole === 'receiver' || userRole === 'recipient' ? 'Find Food' : 'Get Started as Recipient'}
+                  </PrimaryButton>
                 </div>
               </Card>
             </div>

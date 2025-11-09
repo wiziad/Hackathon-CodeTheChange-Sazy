@@ -189,7 +189,7 @@ export function EventCard({
 }
 
 /* BottomNav */
-type TabId = "home" | "notifications" | "profile" | "create" | "my-events" | "dashboard";
+type TabId = "home" | "notifications" | "map" | "profile" | "create" | "my-events" | "dashboard";
 export function BottomNav({ activeTab, onTabChange, className }: { activeTab: TabId; onTabChange: (id: TabId) => void; className?: string; }) {
   const router = useRouter();
   const roleFromStore = useAuthStore((s) => s.role);
@@ -202,6 +202,7 @@ export function BottomNav({ activeTab, onTabChange, className }: { activeTab: Ta
   const baseTabs: { id: TabId; label: string; icon: React.ReactNode; path?: string }[] = [
     { id: "home", label: "Home", icon: <Home size={20} />, path: "/" },
     { id: "notifications", label: "Notifications", icon: <Bell size={20} />, path: "/notifications" },
+    { id: "map", label: "Map", icon: <MapPin size={20} />, path: "/map" },
     { id: "profile", label: "Profile", icon: <Users size={20} />, path: "/profile" },
   ];
 
@@ -255,6 +256,13 @@ export function StickyHeader({ rightSide }: { rightSide?: React.ReactNode }) {
                 <span className="absolute top-1 right-1 w-2 h-2 bg-brand-500 rounded-full" />
               </button>
               <button 
+                onClick={() => router.push('/map')} 
+                className="p-2 rounded-xl hover:bg-gray-200 transition-all duration-200 active:scale-95" 
+                aria-label="Map"
+              >
+                <MapPin size={20} className="text-brand-600" />
+              </button>
+              <button 
                 onClick={() => router.push('/profile')} 
                 className="p-2 rounded-xl hover:bg-gray-200 transition-all duration-200 active:scale-95" 
                 aria-label="Profile"
@@ -286,6 +294,7 @@ export function HamburgerMenu() {
 
   const menuItems = [
     { label: "Home", path: "/" },
+    { label: "Map", path: "/map" },
     // Donor-only links will be conditionally added below
     { label: "Notifications", path: "/notifications" },
     { label: "Profile", path: "/profile" },
@@ -297,9 +306,9 @@ export function HamburgerMenu() {
   // Insert donor-only items if the user is a donor
   if (role === "donor") {
     // insert after Home (index 0)
-    menuItems.splice(1, 0, { label: "Donor Dashboard", path: "/donor" });
-    menuItems.splice(2, 0, { label: "My Events", path: "/donor/my-events" });
-    menuItems.splice(3, 0, { label: "Create Event", path: "/donor/event/new" });
+    menuItems.splice(2, 0, { label: "Donor Dashboard", path: "/donor" });
+    menuItems.splice(3, 0, { label: "My Events", path: "/donor/my-events" });
+    menuItems.splice(4, 0, { label: "Create Event", path: "/donor/event/new" });
   }
 
   const handleNavigate = (path: string) => {

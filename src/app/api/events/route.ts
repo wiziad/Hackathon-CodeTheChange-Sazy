@@ -21,17 +21,55 @@ export async function GET() {
 export async function POST(req: Request) {
   try {
     const body = await req.json()
-    const { title, description, creator_id, capacity, items = [], timeOptions = [], siteOptions = [] } = body
+    const { title, description, creator_id, capacity, items = [], timeOptions = [], siteOptions = [], address, lat, lng } = body
 
     if (!title || !creator_id) {
       return NextResponse.json({ ok: false, error: 'title and creator_id are required' }, { status: 400 })
     }
 
+    // If address and coordinates are provided, create a site
+    let siteId = null;
+    if (address && lat && lng) {
+      // Extract postal code from address if possible, otherwise use a placeholder
+      const postalCodeMatch = address.match(/[A-Za-z]\d[A-Za-z] ?\d[A-Za-z]\d/);
+      const postalCode = postalCodeMatch ? postalCodeMatch[0] : 'N/A';
+      
+      const { data: site, error: siteError } = await supabaseAdmin
+        .from('sites')
+        .insert({
+          name: title,
+          address,
+          postal_code: postalCode,
+          lat,
+          lng
+        })
+        .select('id')
+        .single()
+      
+      if (siteError) {
+        console.error('Site creation error:', siteError)
+      } else {
+        siteId = site.id
+      }
+    }
+
+    // Build the event object dynamically to avoid issues with missing columns
+    const eventObject: any = {
+      title,
+      creator_id,
+      status: 'open'
+    };
+    
+    if (description !== undefined) eventObject.description = description;
+    // Only include capacity if it's provided and not null
+    if (capacity !== undefined && capacity !== null) eventObject.capacity = capacity;
+
     const { data: event, error: insErr } = await supabaseAdmin
       .from('events')
-      .insert({ title, description: description ?? null, creator_id, capacity: capacity ?? null, status: 'open' })
+      .insert(eventObject)
       .select('*')
       .single()
+      
     if (insErr) throw insErr
 
     // Insert time options
@@ -41,8 +79,13 @@ export async function POST(req: Request) {
     }
 
     // Insert site options
-    if (Array.isArray(siteOptions) && siteOptions.length) {
-      const soInsert = siteOptions.map((id: string) => ({ event_id: event.id, site_id: id }))
+    let siteOptionsToInsert = siteOptions;
+    if (siteId && !siteOptions.includes(String(siteId))) {
+      siteOptionsToInsert = [...siteOptions, String(siteId)]
+    }
+    
+    if (Array.isArray(siteOptionsToInsert) && siteOptionsToInsert.length) {
+      const soInsert = siteOptionsToInsert.map((id: string) => ({ event_id: event.id, site_id: id }))
       await supabaseAdmin.from('event_site_options').insert(soInsert)
     }
 

@@ -8,14 +8,30 @@ import 'maplibre-gl/dist/maplibre-gl.css';
 
 interface MapViewProps {
   className?: string;
+  eventCoordinates?: { lat: number; lng: number } | null;
+  userLocation?: { lat: number; lng: number } | null;
 }
 
-export function MapView({ className = "" }: MapViewProps) {
+// Calculate distance between two points using Haversine formula
+function calculateDistance(lat1: number, lon1: number, lat2: number, lon2: number): number {
+  const R = 6371; // Radius of the Earth in kilometers
+  const dLat = (lat2 - lat1) * Math.PI / 180;
+  const dLon = (lon2 - lon1) * Math.PI / 180;
+  const a = 
+    Math.sin(dLat/2) * Math.sin(dLat/2) +
+    Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * 
+    Math.sin(dLon/2) * Math.sin(dLon/2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+  return R * c; // Distance in kilometers
+}
+
+export function MapView({ className = "", eventCoordinates = null, userLocation = null }: MapViewProps) {
   const [map, setMap] = useState<any>(null);
   const [markers, setMarkers] = useState<any[]>([]);
   const [userMarker, setUserMarker] = useState<any>(null);
   const [eventsWithCoordinates, setEventsWithCoordinates] = useState<any[]>([]);
   const [error, setError] = useState<string>("");
+  const [refreshTrigger, setRefreshTrigger] = useState(0); // Used to trigger refresh
   const containerRef = useRef<HTMLDivElement | null>(null);
 
   // Initialize map
@@ -32,6 +48,24 @@ export function MapView({ className = "" }: MapViewProps) {
     setMap(mapInstance);
     return () => mapInstance.remove();
   }, [containerRef.current]);
+
+  // Function to manually refresh events
+  const refreshEvents = () => {
+    setRefreshTrigger(prev => prev + 1);
+  };
+
+  // Make refreshEvents available externally
+  useEffect(() => {
+    // Attach to window for debugging purposes
+    (window as any).refreshMapEvents = refreshEvents;
+    
+    return () => {
+      // Clean up
+      if ((window as any).refreshMapEvents) {
+        delete (window as any).refreshMapEvents;
+      }
+    };
+  }, []);
 
   // Fetch events from database
   useEffect(() => {
@@ -70,33 +104,104 @@ export function MapView({ className = "" }: MapViewProps) {
     };
 
     fetchEvents();
-  }, []);
+  }, [refreshTrigger]); // Add refreshTrigger as dependency
 
   // Add markers when map and events are ready
   useEffect(() => {
-    if (!map || eventsWithCoordinates.length === 0) return;
+    if (!map) return;
 
     // Clear existing markers
     markers.forEach(marker => marker.remove());
     if (userMarker) userMarker.remove();
 
-    const newMarkers = eventsWithCoordinates.map(event => {
-      const marker = new maplibregl.Marker({ color: "#FF0000" })
-        .setLngLat([event.site.lng, event.site.lat])
+    const newMarkers = [];
+
+    // Add event coordinates marker if provided (for event creation)
+    if (eventCoordinates) {
+      const eventMarker = new maplibregl.Marker({ color: "#FF0000" })
+        .setLngLat([eventCoordinates.lng, eventCoordinates.lat])
         .setPopup(new maplibregl.Popup().setHTML(`
           <div>
-            <h3 class="font-bold">${event.name}</h3>
-            <p>${event.site.name}</p>
-            <p>${event.site.address}</p>
-            ${event.description ? `<p class="mt-2 text-sm">${event.description}</p>` : ''}
+            <h3 class="font-bold">Your Event Location</h3>
+            <p>Click to view details</p>
           </div>
         `))
         .addTo(map);
-      return marker;
-    });
+      newMarkers.push(eventMarker);
+      map.flyTo({ center: [eventCoordinates.lng, eventCoordinates.lat], zoom: 14 });
+    }
+
+    // Add user location marker if provided
+    if (userLocation) {
+      const userLocMarker = new maplibregl.Marker({ color: "#0000FF" })
+        .setLngLat([userLocation.lng, userLocation.lat])
+        .setPopup(new maplibregl.Popup().setHTML(`
+          <div>
+            <h3 class="font-bold">Your Location</h3>
+          </div>
+        `))
+        .addTo(map);
+      newMarkers.push(userLocMarker);
+      
+      // Filter events to only show those within 50km of user
+      const nearbyEvents = eventsWithCoordinates.filter(event => {
+        const distance = calculateDistance(
+          userLocation.lat, 
+          userLocation.lng, 
+          event.site.lat, 
+          event.site.lng
+        );
+        return distance <= 50; // Show events within 50km
+      });
+      
+      // Add nearby events markers
+      const eventMarkers = nearbyEvents.map(event => {
+        const distance = calculateDistance(
+          userLocation.lat, 
+          userLocation.lng, 
+          event.site.lat, 
+          event.site.lng
+        );
+        
+        const marker = new maplibregl.Marker({ color: "#FF0000" })
+          .setLngLat([event.site.lng, event.site.lat])
+          .setPopup(new maplibregl.Popup().setHTML(`
+            <div>
+              <h3 class="font-bold">${event.name}</h3>
+              <p>${event.site.name}</p>
+              <p>${event.site.address}</p>
+              <p class="text-blue-600 font-medium">${distance.toFixed(1)} km away</p>
+              ${event.description ? `<p class="mt-2 text-sm">${event.description}</p>` : ''}
+            </div>
+          `))
+          .addTo(map);
+        return marker;
+      });
+
+      newMarkers.push(...eventMarkers);
+      map.flyTo({ center: [userLocation.lng, userLocation.lat], zoom: 12 });
+    } else {
+      // If no user location, show all events
+      const eventMarkers = eventsWithCoordinates.map(event => {
+        const marker = new maplibregl.Marker({ color: "#FF0000" })
+          .setLngLat([event.site.lng, event.site.lat])
+          .setPopup(new maplibregl.Popup().setHTML(`
+            <div>
+              <h3 class="font-bold">${event.name}</h3>
+              <p>${event.site.name}</p>
+              <p>${event.site.address}</p>
+              ${event.description ? `<p class="mt-2 text-sm">${event.description}</p>` : ''}
+            </div>
+          `))
+          .addTo(map);
+        return marker;
+      });
+
+      newMarkers.push(...eventMarkers);
+    }
 
     setMarkers(newMarkers);
-  }, [map, eventsWithCoordinates]);
+  }, [map, eventsWithCoordinates, eventCoordinates, userLocation]);
 
   // Handle user postal code search
   const handleLocationSelect = async (location: any) => {

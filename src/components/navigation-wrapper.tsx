@@ -13,9 +13,25 @@ export default function NavigationWrapper() {
     return null;
   }
 
+  // Determine active tab based on current path
+  let activeTab: any = "home";
+  if (pathname === "/notifications") {
+    activeTab = "notifications";
+  } else if (pathname === "/map") {
+    activeTab = "map";
+  } else if (pathname === "/profile") {
+    activeTab = "profile";
+  } else if (pathname === "/donor/event/new") {
+    activeTab = "create";
+  } else if (pathname === "/donor/my-events") {
+    activeTab = "my-events";
+  } else if (pathname === "/donor") {
+    activeTab = "dashboard";
+  }
+
   return (
     <BottomNav 
-      activeTab="home" 
+      activeTab={activeTab} 
       onTabChange={(tab) => {
         // In a real app, this would navigate to the appropriate page
         console.log(`Navigate to ${tab}`);

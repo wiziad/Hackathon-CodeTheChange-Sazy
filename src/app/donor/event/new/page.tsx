@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Globe, Plus, Minus } from "lucide-react";
+import { Globe, Plus, Minus, MapPin } from "lucide-react";
 import { 
   Card,
   PrimaryButton,
@@ -13,6 +13,7 @@ import {
   HamburgerMenu
 } from "@/components/ui/base";
 import { useAuth } from '@/providers/auth-provider';
+import { MapView } from "@/components/map-view";
 
 interface Item {
   categoryId: string;
@@ -29,6 +30,8 @@ export default function NewEvent() {
   const [timeWindows, setTimeWindows] = useState<string[]>(["today_11_13"]);
   const [sites, setSites] = useState<string[]>(["1"]);
   const [visibility, setVisibility] = useState("public");
+  const [eventAddress, setEventAddress] = useState("");
+  const [eventCoordinates, setEventCoordinates] = useState<{ lat: number; lng: number } | null>(null);
 
   const handleAddItem = () => {
     setItems([...items, { categoryId: "1", targetQty: 1 }]);
@@ -84,6 +87,28 @@ export default function NewEvent() {
     setSites(newSites);
   };
 
+  // Handle geocoding of event address
+  const handleGeocodeAddress = async () => {
+    if (!eventAddress.trim()) return;
+    
+    try {
+      const response = await fetch(
+        `https://api.geoapify.com/v1/geocode/search?text=${encodeURIComponent(eventAddress)}&apiKey=4d9b9abf044946b59e43d604b5e15812`
+      );
+      
+      if (!response.ok) throw new Error('Geocoding failed');
+      
+      const data = await response.json();
+      if (data.features.length === 0) throw new Error('Location not found');
+      
+      const [lng, lat] = data.features[0].geometry.coordinates;
+      setEventCoordinates({ lat, lng });
+    } catch (err) {
+      console.error("Geocoding error:", err);
+      // In a real app, you'd show an error message to the user
+    }
+  };
+
   const handlePublish = async () => {
     try {
       if (!user?.id) {
@@ -100,7 +125,9 @@ export default function NewEvent() {
         status: 'open',
         createdAt: new Date().toISOString(),
         items: items.map(it => String(it.categoryId)),
-        rsvpCount: 0
+        rsvpCount: 0,
+        address: eventAddress,
+        coordinates: eventCoordinates
       };
 
       try {
@@ -125,6 +152,9 @@ export default function NewEvent() {
             timeOptions: timeWindows,
             siteOptions: sites,
             visibility,
+            address: eventAddress,
+            lat: eventCoordinates?.lat,
+            lng: eventCoordinates?.lng
           }),
         });
         if (res.ok) {
@@ -176,7 +206,7 @@ export default function NewEvent() {
           {/* Progress Indicator */}
           <div className="flex justify-center">
             <div className="flex gap-2">
-              {[1, 2, 3, 4].map((num) => (
+              {[1, 2, 3, 4, 5].map((num) => (
                 <div 
                   key={num} 
                   className={`h-2 w-2 rounded-full ${step >= num ? "bg-green-600" : "bg-gray-300 dark:bg-gray-700"}`}
@@ -190,15 +220,17 @@ export default function NewEvent() {
               <div className="space-y-1 mb-4">
                 <h2 className="text-lg font-semibold">
                   {step === 1 && "Event Basics"}
-                  {step === 2 && "Time Options"}
-                  {step === 3 && "Site Options"}
-                  {step === 4 && "Visibility"}
+                  {step === 2 && "Event Location"}
+                  {step === 3 && "Time Options"}
+                  {step === 4 && "Site Options"}
+                  {step === 5 && "Visibility"}
                 </h2>
                 <p className="text-sm text-muted-foreground">
                   {step === 1 && "Basic information about your event"}
-                  {step === 2 && "Select time windows for your event"}
-                  {step === 3 && "Select sites for your event"}
-                  {step === 4 && "Set who can see your event"}
+                  {step === 2 && "Set the location for your event"}
+                  {step === 3 && "Select time windows for your event"}
+                  {step === 4 && "Select sites for your event"}
+                  {step === 5 && "Set who can see your event"}
                 </p>
               </div>
               
@@ -272,6 +304,48 @@ export default function NewEvent() {
 
               {step === 2 && (
                 <div className="space-y-4">
+                  <div className="space-y-2">
+                    <label htmlFor="eventAddress" className="text-sm font-medium">Event Address</label>
+                    <div className="flex gap-2">
+                      <Input
+                        id="eventAddress"
+                        placeholder="Enter the event address"
+                        value={eventAddress}
+                        onChange={(e: React.ChangeEvent<HTMLInputElement>) => setEventAddress(e.target.value)}
+                        className="flex-1"
+                      />
+                      <PrimaryButton 
+                        onClick={handleGeocodeAddress}
+                        disabled={!eventAddress.trim()}
+                      >
+                        <MapPin className="h-4 w-4" />
+                      </PrimaryButton>
+                    </div>
+                    <p className="text-xs text-muted-foreground">
+                      Enter the full address where the event will take place
+                    </p>
+                  </div>
+
+                  {eventCoordinates && (
+                    <div className="mt-4">
+                      <h3 className="text-sm font-medium mb-2">Event Location Preview</h3>
+                      <div className="h-64 rounded-lg overflow-hidden">
+                        <MapView 
+                          className="h-full" 
+                          eventCoordinates={eventCoordinates}
+                        />
+                      </div>
+                      <p className="text-xs text-green-600 mt-2">
+                        Location set successfully! The event will appear on the map with a red marker.
+                      </p>
+                    </div>
+                  )}
+
+                </div>
+              )}
+
+              {step === 3 && (
+                <div className="space-y-4">
                   <label className="text-sm font-medium">Time Windows</label>
                   <div className="space-y-3">
                     {timeWindows.map((timeWindow, index) => (
@@ -312,7 +386,7 @@ export default function NewEvent() {
                 </div>
               )}
 
-              {step === 3 && (
+              {step === 4 && (
                 <div className="space-y-4">
                   <label className="text-sm font-medium">Sites</label>
                   <div className="space-y-3">
@@ -347,7 +421,7 @@ export default function NewEvent() {
                 </div>
               )}
 
-              {step === 4 && (
+              {step === 5 && (
                 <div className="space-y-4">
                   <label className="text-sm font-medium">Visibility</label>
                   <div className="space-y-3">
@@ -398,12 +472,12 @@ export default function NewEvent() {
                 >
                   Back
                 </SecondaryButton>
-                {step < 4 ? (
+                {step < 5 ? (
                   <PrimaryButton onClick={() => setStep(step + 1)}>
                     Next
                   </PrimaryButton>
                 ) : (
-                  <PrimaryButton onClick={handlePublish}>
+                  <PrimaryButton onClick={handlePublish} disabled={!eventCoordinates}>
                     Publish Event
                   </PrimaryButton>
                 )}

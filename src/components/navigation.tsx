@@ -9,6 +9,7 @@ import {
   Home, 
   User, 
   Bell,
+  Map,
   Menu,
   X,
   Plus,
@@ -24,6 +25,7 @@ function buildNavItems(role: string | null): NavItem[] {
   const base = [
     { href: "/", label: "Home", icon: Home },
     { href: "/notifications", label: "Notifications", icon: Bell },
+    { href: "/map", label: "Map", icon: Map },
     { href: "/profile", label: "Profile", icon: User },
   ];
 

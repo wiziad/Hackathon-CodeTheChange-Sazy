@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { Globe, MapPin, Star, MessageCircle, Shield } from "lucide-react";
+import { Globe, MapPin, Star, Shield, Settings, LogOut, User as UserIcon } from "lucide-react";
 import { 
   Card,
   PrimaryButton,
@@ -24,26 +24,38 @@ interface Profile {
   postalCode?: string;
 }
 
-export default function Profile({ params }: { params: { id: string } }) {
+export default function ProfilePage() {
   const router = useRouter();
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
 
   useEffect(() => {
-    // Fetch profile from API
-    fetchProfile();
-  }, [params.id]);
+    checkAuthAndFetchProfile();
+  }, []);
 
-  const fetchProfile = async () => {
+  const checkAuthAndFetchProfile = () => {
+    const session = localStorage.getItem("metra_session");
+    
+    if (!session) {
+      setIsLoggedIn(false);
+      setLoading(false);
+      return;
+    }
+
+    setIsLoggedIn(true);
+    
+    // Parse session and fetch profile
     try {
-      // In a real app, this would be an API call
-      // For now, we'll use mock data
+      const { user } = JSON.parse(session);
+      
+      // Mock profile data - in real app, fetch from API
       const mockProfile: Profile = {
-        id: params.id,
-        name: "Alice Johnson",
-        role: "donor",
+        id: user.id,
+        name: user.name,
+        role: user.role,
         bio: "Passionate about reducing food waste and helping my community. I organize weekly food drives and partner with local businesses to collect surplus food.",
-        photoUrl: "https://example.com/alice.jpg",
+        photoUrl: "https://example.com/user.jpg",
         rating: 4.8,
         verified: true,
         visibility: "public",
@@ -54,19 +66,19 @@ export default function Profile({ params }: { params: { id: string } }) {
       setProfile(mockProfile);
       setLoading(false);
     } catch (error) {
-      console.error("Error fetching profile:", error);
+      console.error("Error parsing session:", error);
+      setIsLoggedIn(false);
       setLoading(false);
     }
   };
 
-  const handleMessage = () => {
-    // In a real app, this would create a new DM thread
-    router.push(`/messages/new?userId=${params.id}`);
+  const handleLogout = () => {
+    localStorage.removeItem("metra_session");
+    router.push("/auth");
   };
 
-  const handleReport = () => {
-    // In a real app, this would open a report dialog
-    console.log(`Report user ${params.id}`);
+  const handleSettings = () => {
+    router.push("/settings");
   };
 
   if (loading) {
@@ -77,33 +89,71 @@ export default function Profile({ params }: { params: { id: string } }) {
     );
   }
 
-  if (!profile) {
+  // Not logged in - show login prompt
+  if (!isLoggedIn) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <p>Profile not found</p>
+      <div className="min-h-screen bg-background flex flex-col">
+        {/* Header */}
+        <header className="border-b">
+          <div className="container flex h-16 items-center justify-between px-4">
+            <button 
+              onClick={() => router.push('/')} 
+              className="flex items-center gap-3 hover:opacity-80 transition-opacity cursor-pointer"
+            >
+              <MetraLogo />
+              <span className="text-xl font-bold">Metra</span>
+            </button>
+            <HamburgerMenu />
+          </div>
+        </header>
+
+        {/* Main Content */}
+        <main className="flex-1 p-4 pb-20 md:pb-4 flex items-center justify-center">
+          <div className="container max-w-md mx-auto">
+            <Card>
+              <div className="p-8 text-center">
+                <div className="h-20 w-20 rounded-full bg-gray-200 flex items-center justify-center mx-auto mb-4">
+                  <UserIcon className="h-10 w-10 text-gray-400" />
+                </div>
+                <h2 className="text-2xl font-bold mb-2">View Your Profile</h2>
+                <p className="text-muted-foreground mb-6">
+                  Please log in to view your profile and manage your account
+                </p>
+                <div className="space-y-3">
+                  <PrimaryButton 
+                    className="w-full" 
+                    onClick={() => router.push('/auth')}
+                  >
+                    Log In / Sign Up
+                  </PrimaryButton>
+                  <OutlineButton 
+                    className="w-full" 
+                    onClick={() => router.push('/')}
+                  >
+                    Back to Home
+                  </OutlineButton>
+                </div>
+              </div>
+            </Card>
+          </div>
+        </main>
       </div>
     );
   }
 
+  // Logged in - show profile
   return (
     <div className="min-h-screen bg-background flex flex-col">
       {/* Header */}
       <header className="border-b">
         <div className="container flex h-16 items-center justify-between px-4">
-          <div className="flex items-center gap-2">
-            <button 
-              className="p-2 rounded-xl hover:bg-gray-100 transition-all duration-200"
-              onClick={() => router.back()}
-            >
-              ←
-            </button>
-            <button 
-              onClick={() => router.push('/')} 
-              className="hover:opacity-80 transition-opacity cursor-pointer"
-            >
-              <MetraLogo />
-            </button>
-          </div>
+          <button 
+            onClick={() => router.push('/')} 
+            className="flex items-center gap-3 hover:opacity-80 transition-opacity cursor-pointer"
+          >
+            <MetraLogo />
+            <span className="text-xl font-bold">Metra</span>
+          </button>
           <HamburgerMenu />
         </div>
       </header>
@@ -115,8 +165,12 @@ export default function Profile({ params }: { params: { id: string } }) {
             <div className="p-6">
               <div className="flex flex-col items-center gap-4 mb-6">
                 <div className="relative">
-                  <div className="h-24 w-24 rounded-full bg-green-600"></div>
-                  {profile.verified && (
+                  <div className="h-24 w-24 rounded-full bg-green-600 flex items-center justify-center">
+                    <span className="text-3xl font-bold text-white">
+                      {profile?.name.charAt(0).toUpperCase()}
+                    </span>
+                  </div>
+                  {profile?.verified && (
                     <div className="absolute bottom-0 right-0 h-6 w-6 rounded-full bg-green-500 flex items-center justify-center">
                       <Shield className="h-4 w-4 text-white" />
                     </div>
@@ -124,21 +178,21 @@ export default function Profile({ params }: { params: { id: string } }) {
                 </div>
                 <div className="text-center">
                   <h2 className="text-xl font-bold flex items-center justify-center gap-2">
-                    {profile.name}
-                    {profile.verified && (
+                    {profile?.name}
+                    {profile?.verified && (
                       <Shield className="h-5 w-5 text-green-500" />
                     )}
                   </h2>
                   <p className="text-sm text-muted-foreground">
-                    {profile.role === "donor" && "Food Donor"}
-                    {profile.role === "receiver" && "Food Receiver"}
-                    {profile.role === "org" && "Organization"}
+                    {profile?.role === "donor" && "Food Donor"}
+                    {profile?.role === "recipient" && "Food Receiver"}
+                    {profile?.role === "org" && "Organization"}
                   </p>
                 </div>
               </div>
               
               <div className="space-y-4">
-                {profile.bio && (
+                {profile?.bio && (
                   <div>
                     <h3 className="font-semibold mb-2">About</h3>
                     <p className="text-muted-foreground">{profile.bio}</p>
@@ -149,7 +203,7 @@ export default function Profile({ params }: { params: { id: string } }) {
                   <div className="text-center">
                     <div className="flex items-center justify-center gap-1">
                       <Star className="h-5 w-5 text-yellow-500" />
-                      <span className="font-bold">{profile.rating?.toFixed(1)}</span>
+                      <span className="font-bold">{profile?.rating?.toFixed(1)}</span>
                     </div>
                     <p className="text-sm text-muted-foreground">Rating</p>
                   </div>
@@ -165,7 +219,7 @@ export default function Profile({ params }: { params: { id: string } }) {
                   </div>
                 </div>
                 
-                {profile.postalCode && (
+                {profile?.postalCode && (
                   <div className="flex items-center justify-center gap-2 text-muted-foreground">
                     <MapPin className="h-4 w-4" />
                     <span>{profile.postalCode}</span>
@@ -176,14 +230,14 @@ export default function Profile({ params }: { params: { id: string } }) {
               <div className="flex flex-col gap-3 mt-6">
                 <PrimaryButton 
                   className="w-full" 
-                  onClick={handleMessage}
-                  disabled={!profile.dmAllowed}
+                  onClick={handleSettings}
                 >
-                  <MessageCircle className="h-4 w-4 mr-2" />
-                  Send Message
+                  <Settings className="h-4 w-4 mr-2" />
+                  Edit Profile & Settings
                 </PrimaryButton>
-                <OutlineButton className="w-full" onClick={handleReport}>
-                  Report User
+                <OutlineButton className="w-full" onClick={handleLogout}>
+                  <LogOut className="h-4 w-4 mr-2" />
+                  Log Out
                 </OutlineButton>
               </div>
             </div>

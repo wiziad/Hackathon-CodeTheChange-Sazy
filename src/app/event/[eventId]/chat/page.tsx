@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { use, useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
@@ -31,8 +31,9 @@ interface ChatMessage {
   pinned?: boolean;
 }
 
-export default function EventChat({ params }: { params: { eventId: string } }) {
+export default function EventChat({ params }: { params: Promise<{ eventId: string }> }) {
   const router = useRouter();
+  const { eventId } = use(params);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [newMessage, setNewMessage] = useState("");
   const [participants, setParticipants] = useState<Profile[]>([]);
@@ -41,7 +42,7 @@ export default function EventChat({ params }: { params: { eventId: string } }) {
   useEffect(() => {
     // Fetch chat messages and participants from API
     fetchChatData();
-  }, [params.eventId]);
+  }, [eventId]);
 
   useEffect(() => {
     // Scroll to bottom of chat
@@ -55,7 +56,7 @@ export default function EventChat({ params }: { params: { eventId: string } }) {
       const mockMessages: ChatMessage[] = [
         {
           id: "1",
-          threadId: params.eventId,
+          threadId: eventId,
           authorId: "1",
           text: "Hi everyone! Looking forward to tomorrow's event",
           ts: new Date(Date.now() - 7200000).toISOString(),
@@ -64,7 +65,7 @@ export default function EventChat({ params }: { params: { eventId: string } }) {
         },
         {
           id: "2",
-          threadId: params.eventId,
+          threadId: eventId,
           authorId: "2",
           text: "Thanks for organizing this, Alice!",
           ts: new Date(Date.now() - 3600000).toISOString(),
@@ -72,7 +73,7 @@ export default function EventChat({ params }: { params: { eventId: string } }) {
         },
         {
           id: "3",
-          threadId: params.eventId,
+          threadId: eventId,
           authorId: "3",
           text: "We've confirmed the site for tomorrow. See you all at 11am!",
           ts: new Date().toISOString(),
@@ -136,7 +137,7 @@ export default function EventChat({ params }: { params: { eventId: string } }) {
     // In a real app, this would be an API call
     const mockNewMessage: ChatMessage = {
       id: (messages.length + 1).toString(),
-      threadId: params.eventId,
+      threadId: eventId,
       authorId: "current-user",
       text: newMessage,
       ts: new Date().toISOString(),

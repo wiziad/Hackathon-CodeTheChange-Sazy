@@ -1,6 +1,7 @@
 "use client";
 import * as React from "react";
-import { Calendar, MapPin, Menu, MessageCircle, Users, Bell } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { Calendar, MapPin, Menu, MessageCircle, Users, Bell, User } from "lucide-react";
 
 export function cn(...c: Array<string | false | null | undefined>) {
   return c.filter(Boolean).join(" ");
@@ -26,7 +27,7 @@ export function PrimaryButton({ className, children, ...props }: BtnProps) {
       style={{ backgroundColor: "var(--brand)" }}  // fallback green even if CSS classes fail
       className={cn(
         "px-6 py-3 bg-brand-600 hover:bg-brand-700 active:bg-brand-800 text-white font-semibold rounded-xl",
-        "transition-all duration-200 transform hover:scale-105 active:scale-95 shadow-lg shadow-brand-600/20",
+        "transition-all duration-200 transform hover:scale-102 active:scale-98 shadow-lg shadow-brand-600/20",
         "disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none",
         className
       )}
@@ -129,10 +130,14 @@ export function PollOption({
 export function EventCard({
   title, description, distance, time, attendees = 0, capacity = 0, items = [],
   rsvpd, onRsvp, onMessage, sponsored, finalized, className,
+  actionLabel,
+  pendingLabel,
+  pending
 }: {
   title: string; description?: string; distance?: string; time?: string;
   attendees?: number; capacity?: number; items?: string[]; rsvpd?: boolean;
   onRsvp?: () => void; onMessage?: () => void; sponsored?: boolean; finalized?: boolean; className?: string;
+  actionLabel?: string; pendingLabel?: string; pending?: boolean;
 }) {
   return (
     <Card className={cn("hover:border-brand-300 transition-all duration-200", className)}>
@@ -166,10 +171,11 @@ export function EventCard({
         <button onClick={onRsvp}
           className={cn(
             "flex-1 py-3 rounded-xl font-semibold transition-all duration-200 transform active:scale-95",
-            rsvpd ? "bg-brand-600 text-white" : "bg-brand-50 text-brand-700 hover:bg-brand-100"
+            pending ? "bg-brand-600 text-white" : "bg-brand-50 text-brand-700 hover:bg-brand-100"
           )}
+          disabled={pending}
         >
-          {rsvpd ? "✓ RSVP’d" : "RSVP"}
+          {pending ? (pendingLabel ?? "Requested - Pending") : (actionLabel ?? "RSVP")}
         </button>
         <button onClick={onMessage}
           className="px-4 py-3 bg-brand-50 hover:bg-brand-100 rounded-xl transition-all duration-200 transform active:scale-95"
@@ -209,19 +215,37 @@ export function BottomNav({ activeTab, onTabChange, className }: { activeTab: Ta
 
 /* Sticky Header (light only) */
 export function StickyHeader({ rightSide }: { rightSide?: React.ReactNode }) {
+  const router = useRouter();
   return (
     <header className="sticky top-0 z-50 bg-white/80 backdrop-blur-lg border-b border-brand-200">
       <div className="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between">
-        <div className="flex items-center gap-3">
+        <button 
+          onClick={() => router.push('/')} 
+          className="flex items-center gap-3 hover:opacity-80 transition-opacity cursor-pointer"
+        >
           <div className="text-brand-600"><MetraLogo /></div>
           <span className="text-xl font-bold">Metra</span>
-        </div>
+        </button>
         <div className="flex items-center gap-3">
           {rightSide ?? (
-            <button className="relative p-2 rounded-xl hover:bg-brand-50 transition-all duration-200 active:scale-95" aria-label="Notifications">
-              <Bell size={20} className="text-brand-600" />
-              <span className="absolute top-1 right-1 w-2 h-2 bg-brand-500 rounded-full" />
-            </button>
+            <>
+              <button 
+                onClick={() => router.push('/notifications')} 
+                className="relative p-2 rounded-xl hover:bg-gray-200 transition-all duration-200 active:scale-95" 
+                aria-label="Notifications"
+              >
+                <Bell size={20} className="text-brand-600" />
+                <span className="absolute top-1 right-1 w-2 h-2 bg-brand-500 rounded-full" />
+              </button>
+              <button 
+                onClick={() => router.push('/profile')} 
+                className="p-2 rounded-xl hover:bg-gray-200 transition-all duration-200 active:scale-95" 
+                aria-label="Profile"
+              >
+                <User size={20} className="text-brand-600" />
+              </button>
+              <HamburgerMenu />
+            </>
           )}
         </div>
       </div>
@@ -235,5 +259,71 @@ export function BellDot() {
       <Bell size={20} className="text-brand-600" />
       <span className="absolute top-1 right-1 w-2 h-2 bg-brand-500 rounded-full" />
     </button>
+  );
+}
+
+/* Hamburger Menu */
+export function HamburgerMenu() {
+  const router = useRouter();
+  const [isOpen, setIsOpen] = React.useState(false);
+
+  const menuItems = [
+    { label: "Home", path: "/" },
+    { label: "Donor Dashboard", path: "/donor" },
+    { label: "My Events", path: "/donor/my-events" },
+    { label: "Create Event", path: "/donor/event/new" },
+    { label: "Notifications", path: "/notifications" },
+    { label: "Profile", path: "/profile" },
+  ];
+
+  const handleNavigate = (path: string) => {
+    router.push(path);
+    setIsOpen(false);
+  };
+
+  return (
+    <>
+      <button
+        onClick={() => setIsOpen(!isOpen)}
+        className="p-2 rounded-xl hover:bg-gray-200 transition-all duration-200"
+        aria-label="Menu"
+      >
+        <Menu className="h-5 w-5" />
+      </button>
+
+      {isOpen && (
+        <>
+          <div 
+            className="fixed inset-0 bg-transparent z-40"
+            onClick={() => setIsOpen(false)}
+          />
+          <div className="fixed top-0 right-0 h-screen w-64 bg-white border-l shadow-2xl z-50 flex flex-col">
+            <div className="h-16 px-4 bg-brand-50 flex-shrink-0 flex items-center justify-between border-b">
+              <h2 className="text-lg font-bold text-brand-900">Navigation</h2>
+              <button
+                onClick={() => setIsOpen(false)}
+                className="p-2 hover:bg-white rounded-xl transition-all"
+              >
+                ✕
+              </button>
+            </div>
+            <nav className="flex-1 p-4 space-y-2 bg-white overflow-y-auto">
+              {menuItems.map((item) => (
+                <button
+                  key={item.path}
+                  onClick={() => handleNavigate(item.path)}
+                  className="w-full text-left px-4 py-3 rounded-xl bg-brand-50 hover:bg-gray-200 text-brand-900 font-medium transition-all duration-200 border border-brand-200"
+                >
+                  {item.label}
+                </button>
+              ))}
+            </nav>
+            <div className="p-4 bg-brand-50 border-t flex-shrink-0">
+              <p className="text-xs text-brand-700 text-center">Metra © 2024</p>
+            </div>
+          </div>
+        </>
+      )}
+    </>
   );
 }

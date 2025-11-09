@@ -1,29 +1,64 @@
 "use client";
-import { useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { MetraLogo } from "@/components/ui/base";
+import { StickyHeader, PrimaryButton, Card, Input, MetraLogo } from "@/components/ui/base";
+import { Package, Heart, MapPin } from "lucide-react";
 
-export default function SplashPage() {
+export default function HomePage() {
   const router = useRouter();
-
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      const session = localStorage.getItem("metra_session");
-      if (!session) router.push("/auth");
-      else {
-        const { role } = JSON.parse(session);
-        router.push(role === "donor" ? "/donor" : "/receiver");
-      }
-    }, 1200);
-    return () => clearTimeout(timer);
-  }, [router]);
-
   return (
-    <div className="min-h-screen bg-brand-50 flex flex-col items-center justify-center p-4">
-      <div className="animate-fade-in">
-        <div className="mb-6 flex justify-center animate-bounce-in"><div className="scale-150"><MetraLogo /></div></div>
-        <h1 className="text-5xl font-bold text-brand-900 mb-3 animate-slide-up text-center">METRA</h1>
-        <p className="text-brand-700 text-center animate-slide-up animation-delay-200">Connect. Share. Nourish your community.</p>
+    <div className="min-h-screen bg-brand-50 text-brand-900">
+      <StickyHeader />
+
+      <div className="max-w-7xl mx-auto px-4 py-12">
+        <h1 className="text-4xl font-bold text-center mb-12">How would you like to help today?</h1>
+
+        <div className="grid md:grid-cols-2 gap-6 mb-8">
+          <Card className="p-8 hover:border-brand-500 cursor-pointer transition-all duration-200 group">
+            <div className="flex flex-col items-center text-center">
+              <div className="w-20 h-20 bg-brand-100 rounded-full flex items-center justify-center mb-4 group-hover:scale-110 transition-transform duration-200">
+                <Package className="text-brand-600" size={40} />
+              </div>
+              <h2 className="text-2xl font-bold mb-2">I want to donate</h2>
+              <p className="text-brand-700 mb-4">Share food and help your neighbors</p>
+              <PrimaryButton onClick={() => router.push("/donor")} data-testid="landing-primary-cta">Get Started as Donor</PrimaryButton>
+            </div>
+          </Card>
+
+          <Card className="p-8 hover:border-brand-500 cursor-pointer transition-all duration-200 group">
+            <div className="flex flex-col items-center text-center">
+              <div className="w-20 h-20 bg-brand-100 rounded-full flex items-center justify-center mb-4 group-hover:scale-110 transition-transform duration-200">
+                <Heart className="text-brand-600" size={40} />
+              </div>
+              <h2 className="text-2xl font-bold mb-2">I need food today</h2>
+              <p className="text-brand-700 mb-4">Find nearby food and connect with donors</p>
+              <PrimaryButton onClick={() => router.push("/receiver")}>Get Started as Recipient</PrimaryButton>
+            </div>
+          </Card>
+        </div>
+
+        <div className="max-w-md mx-auto mb-16">
+          <Input placeholder="Enter your postal code" icon={<MapPin size={18} />} />
+        </div>
+
+        <div className="bg-brand-100 rounded-2xl py-12">
+          <div className="max-w-6xl mx-auto px-4">
+            <div className="grid md:grid-cols-3 gap-8">
+              {[
+                { title: "Save Time", desc: "Quick coordination" },
+                { title: "Reduce Waste", desc: "Less food thrown away" },
+                { title: "Help Community", desc: "Support neighbors" },
+              ].map((b) => (
+                <Card key={b.title} className="p-6 text-center">
+                  <div className="w-16 h-16 bg-brand-200 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <MetraLogo size={24} />
+                  </div>
+                  <h3 className="text-xl font-bold mb-2">{b.title}</h3>
+                  <p className="text-brand-700">{b.desc}</p>
+                </Card>
+              ))}
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   );

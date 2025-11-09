@@ -1,1 +1,1 @@
-export { ThemeToggle } from "@/components/ui/base";
+export { HamburgerMenu } from "@/components/ui/base";

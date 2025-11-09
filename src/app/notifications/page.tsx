@@ -2,12 +2,12 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { ThemeToggle } from "@/components/theme-toggle";
 import { Globe, Bell, CheckCircle, User, Calendar, MessageCircle } from "lucide-react";
 import { 
   Card,
   OutlineButton,
-  MetraLogo
+  MetraLogo,
+  HamburgerMenu
 } from "@/components/ui/base";
 
 interface Notification {
@@ -173,19 +173,19 @@ export default function Notifications() {
         <div className="container flex h-16 items-center justify-between px-4">
           <div className="flex items-center gap-2">
             <button 
-              className="p-2 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-900 transition-all duration-200"
+              className="p-2 rounded-xl hover:bg-gray-100 transition-all duration-200"
               onClick={() => router.back()}
             >
               ←
             </button>
-            <MetraLogo />
-          </div>
-          <div className="flex items-center gap-2">
-            <button className="p-2 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-900 transition-all duration-200">
-              <Globe className="h-5 w-5" />
+            <button 
+              onClick={() => router.push('/')} 
+              className="hover:opacity-80 transition-opacity cursor-pointer"
+            >
+              <MetraLogo />
             </button>
-            <ThemeToggle />
           </div>
+          <HamburgerMenu />
         </div>
       </header>
 

@@ -10,9 +10,11 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { ThemeToggle } from "@/components/theme-toggle";
 import { Globe, Bell, Shield, User, Lock, LogOut, Users } from "lucide-react";
 import { createClient } from '@/lib/supabase/client';
+import { useAuth } from '@/providers/auth-provider';
 
 export default function Settings() {
   const router = useRouter();
+  const { signOut } = useAuth();
   const [notifications, setNotifications] = useState({
     email: true,
     push: false,
@@ -74,12 +76,8 @@ export default function Settings() {
     }
   };
 
-  const handleLogout = () => {
-    // Clear localStorage
-    localStorage.clear();
-    
-    // Redirect to home
-    router.push("/");
+  const handleLogout = async () => {
+    await signOut();
   };
 
   return (

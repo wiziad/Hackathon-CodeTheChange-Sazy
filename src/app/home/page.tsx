@@ -1,19 +1,20 @@
 "use client";
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { StickyHeader, PrimaryButton, SecondaryButton, OutlineButton, Card, EventCard, Input, MetraLogo } from "@/components/ui/base";
+import { PrimaryButton, SecondaryButton, OutlineButton, Card, EventCard, Input, MetraLogo } from "@/components/ui/base";
 import { Package, Heart, MapPin, Calendar, Plus } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useAuth } from '@/providers/auth-provider';
 
 export default function HomePage() {
   const router = useRouter();
-  const { profile, loading: authLoading } = useAuth();
+  const { profile, user, loading: authLoading } = useAuth();
   const [showWelcome, setShowWelcome] = useState(false);
   const [isClient, setIsClient] = useState(false);
   const [initialLoadTimeout, setInitialLoadTimeout] = useState(false);
   const [postalCode, setPostalCode] = useState("");
   const [requested, setRequested] = useState<Record<string, boolean>>({});
+  const displayName = profile?.name || user?.user_metadata?.full_name || user?.email?.split('@')[0] || '';
 
   useEffect(() => {
     setIsClient(true);
@@ -77,7 +78,7 @@ export default function HomePage() {
   if (profile?.role === 'donor') {
     return (
       <div className="min-h-screen bg-brand-50 text-brand-900">
-        <StickyHeader />
+
 
         <AnimatePresence>
           {showWelcome && isClient && (
@@ -145,7 +146,7 @@ export default function HomePage() {
                   attendees={8} 
                   capacity={15} 
                   items={["Canned Goods","Grains","Protein"]}
-                  sponsored
+
                   actionLabel="Request to Collaborate"
                   pendingLabel="Requested - Pending"
                   pending={requested["2"]}
@@ -160,12 +161,12 @@ export default function HomePage() {
   }
 
   // Receiver home content
-  if (profile?.role === 'receiver') {
+  if (profile?.role === 'receiver' || profile?.role === 'recipient') {
     const bestWindowLabel = "2-4 PM";
     
     return (
       <div className="min-h-screen bg-brand-50 text-brand-900">
-        <StickyHeader />
+
 
         <AnimatePresence>
           {showWelcome && isClient && (
@@ -221,7 +222,7 @@ export default function HomePage() {
   // Guest/homepage content
   return (
     <div className="min-h-screen bg-brand-50 text-brand-900">
-      <StickyHeader />
+      
 
       <AnimatePresence>
         {showWelcome && isClient && (
@@ -241,10 +242,15 @@ export default function HomePage() {
 
       <div className="max-w-7xl mx-auto px-4 py-12">
         <h1 className="text-4xl font-bold text-center mb-12">
-          {(!authLoading || initialLoadTimeout) && profile ? `Welcome back, ${profile.name || 'Friend'}!` : 'How would you like to help today?'}
+          {(!authLoading || initialLoadTimeout)
+            ? (user
+                ? `Hey ${displayName || (profile?.name || 'Friend')}, how would you like to help today?`
+                : 'Hey Guest, How would you like to help today?'
+              )
+            : 'How would you like to help today?'}
         </h1>
 
-        {(!authLoading || initialLoadTimeout) && !profile && (
+        {(!authLoading || initialLoadTimeout) && (!profile || !profile?.role) && (
           <>
             <div className="grid md:grid-cols-2 gap-6 mb-8">
               <Card className="p-8 hover:border-brand-500 cursor-pointer transition-all duration-200 group">

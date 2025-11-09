@@ -31,9 +31,9 @@ export default function AuthCallback() {
             .eq('auth_id', user.id)
             .single();
           
-          // If profile doesn't exist, redirect to onboarding
-          if (profileError || !profileData) {
-            console.log('No profile found, redirecting to onboarding');
+          // If profile doesn't exist OR missing role, redirect to onboarding
+          if (profileError || !profileData || !profileData.role) {
+            console.log('Profile missing, redirecting to onboarding');
             // Set flag for welcome animation
             localStorage.setItem('showWelcomeAnimation', 'true');
             router.replace('/onboarding');

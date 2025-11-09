@@ -2,7 +2,7 @@
 import { useEffect, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { useRouter } from 'next/navigation'
-import { Card, PrimaryButton } from '@/components/ui/base'
+import { Card, PrimaryButton, OutlineButton } from '@/components/ui/base'
 
 export default function LoginPage() {
   const router = useRouter()
@@ -42,9 +42,14 @@ export default function LoginPage() {
         <h1 className="text-2xl font-bold mb-2">Sign in to Metra</h1>
         <p className="text-gray-600 mb-6">Use your Google account</p>
         {error && <p className="text-red-500 mb-4">{error}</p>}
-        <PrimaryButton onClick={signInWithGoogle} className="w-full">
-          Continue with Google
-        </PrimaryButton>
+        <div className="space-y-3">
+          <PrimaryButton onClick={signInWithGoogle} className="w-full">
+            Continue with Google
+          </PrimaryButton>
+          <OutlineButton onClick={() => router.push('/')} className="w-full">
+            Browse as guest
+          </OutlineButton>
+        </div>
       </Card>
     </div>
   )

@@ -9,8 +9,9 @@ type Ctx = {
   user: any | null;
   profile: any | null;
   refreshProfile: () => Promise<void>;
+  signOut: () => Promise<void>;
 };
-const AuthCtx = createContext<Ctx>({ loading: true, session: null, user: null, profile: null, refreshProfile: async () => {} });
+const AuthCtx = createContext<Ctx>({ loading: true, session: null, user: null, profile: null, refreshProfile: async () => {}, signOut: async () => {} });
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const supabase = useMemo(() => createClient(), []);
@@ -31,7 +32,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       
       if (error && error.code === 'PGRST116') {
         // create minimal profile using any onboarding info saved during guest flow
-        const role = (localStorage.getItem('metra_role') as 'donor' | 'recipient') || 'recipient';
+        const savedRole = localStorage.getItem('metra_role');
+        const role = savedRole === 'recipient' ? 'receiver' : (savedRole as 'donor' | 'receiver') || 'receiver';
         const postal = localStorage.getItem('metra_postal') || null;
         const name = u.user_metadata?.full_name || u.email?.split('@')[0] || 'New user';
         const { data: created } = await supabase.from('profiles')
@@ -71,6 +73,32 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
+  const signOut = async () => {
+    try {
+      await supabase.auth.signOut();
+    } finally {
+      setSession(null);
+      setUser(null);
+      setProfile(null);
+      try {
+        localStorage.removeItem('metra_session');
+        localStorage.removeItem('metra_return_to');
+        // Clear potential Supabase auth tokens in localStorage (sb-*) for dev environments
+        for (let i = 0; i < localStorage.length; i++) {
+          const k = localStorage.key(i) || '';
+          if (k.startsWith('sb-') && k.endsWith('-auth-token')) {
+            localStorage.removeItem(k);
+          }
+        }
+      } catch {}
+      // Force navigation to sign-in to avoid stale state
+      try { router.replace('/auth'); } catch {}
+      if (typeof window !== 'undefined') {
+        window.location.assign('/auth');
+      }
+    }
+  };
+
   useEffect(() => {
     let mounted = true;
     
@@ -107,17 +135,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     
     initAuth();
     
-    const { data: sub } = supabase.auth.onAuthStateChange(async (_e, s) => {
+    const { data: sub } = supabase.auth.onAuthStateChange(async (event, s) => {
       if (!mounted) return;
       
       setSession(s);
       setUser(s?.user ?? null);
       await loadProfile(s?.user ?? null);
       
-      if (s?.user) {
-        const ret = localStorage.getItem('metra_return_to') || '/';
-        localStorage.removeItem('metra_return_to');
-        router.replace(ret);
+      // Only redirect after explicit sign-in, and only if a return path exists
+      if (event === 'SIGNED_IN' && s?.user) {
+        const ret = localStorage.getItem('metra_return_to');
+        if (ret) {
+          localStorage.removeItem('metra_return_to');
+          router.replace(ret);
+        }
       }
     });
     
@@ -128,6 +159,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     };
   }, [supabase, router]);
 
-  return <AuthCtx.Provider value={{ loading, session, user, profile, refreshProfile }}>{children}</AuthCtx.Provider>;
+  return <AuthCtx.Provider value={{ loading, session, user, profile, refreshProfile, signOut }}>{children}</AuthCtx.Provider>;
 }
 export const useAuth = () => useContext(AuthCtx);

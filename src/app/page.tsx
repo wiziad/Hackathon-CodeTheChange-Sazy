@@ -19,7 +19,7 @@ export default function SplashPage() {
         if (session) {
           router.replace('/home');
         } else {
-          router.replace('/auth');
+          router.replace('/home');;
         }
         setShowSplash(false);
       }

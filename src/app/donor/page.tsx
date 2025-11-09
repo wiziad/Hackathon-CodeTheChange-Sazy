@@ -80,7 +80,7 @@ export default function DonorHome() {
               attendees={8} 
               capacity={15} 
               items={["Canned Goods","Grains","Protein"]}
-              sponsored
+
               actionLabel="Request to Collaborate"
               pendingLabel="Requested - Pending"
               pending={requested["2"]}

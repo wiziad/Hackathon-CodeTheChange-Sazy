@@ -1,6 +1,6 @@
 import { AuthProvider } from '@/providers/auth-provider';
 import { MockProvider } from '@/components/mock-provider';
-import type { Metadata } from 'next';
+import { StickyHeader } from '@/components/ui/base';
 
 import '@/app/globals.css';
 
@@ -19,6 +19,7 @@ export default function RootLayout({
       <body className="antialiased">
         <MockProvider>
           <AuthProvider>
+            <StickyHeader />
             {children}
           </AuthProvider>
         </MockProvider>

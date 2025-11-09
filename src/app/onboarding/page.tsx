@@ -7,7 +7,7 @@ import { createClient } from '@/lib/supabase/client'
 export default function OnboardingPage() {
   const router = useRouter()
   const [step, setStep] = useState(1)
-  const [role, setRole] = useState<'donor' | 'recipient'>('donor')
+  const [role, setRole] = useState<'donor' | 'receiver'>('donor')
   const [postalCode, setPostalCode] = useState('')
   const [firstName, setFirstName] = useState('')
   const [lastName, setLastName] = useState('')
@@ -100,9 +100,9 @@ export default function OnboardingPage() {
                 <p className="text-sm text-gray-600">Share food with your community</p>
               </button>
               <button
-                onClick={() => setRole('recipient')}
+                onClick={() => setRole('receiver')}
                 className={`w-full p-4 rounded-lg border-2 text-left transition-colors ${
-                  role === 'recipient' 
+                  role === 'receiver' 
                     ? 'border-brand-500 bg-brand-50' 
                     : 'border-gray-200 hover:border-gray-300'
                 }`}

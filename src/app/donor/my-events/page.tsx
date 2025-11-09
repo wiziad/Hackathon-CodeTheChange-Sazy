@@ -95,16 +95,16 @@ export default function MyEvents() {
   };
 
   const getStatusBadge = (status: string) => {
+    if (status === "draft" || status === "voting") return null;
     const styles = {
-      draft: "bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300",
-      voting: "bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300",
       finalized: "bg-green-100 dark:bg-green-900 text-green-700 dark:text-green-300",
       completed: "bg-purple-100 dark:bg-purple-900 text-purple-700 dark:text-purple-300"
-    };
+    } as const;
 
+    const label = status.charAt(0).toUpperCase() + status.slice(1);
     return (
       <span className={`px-2 py-1 rounded-full text-xs font-medium ${styles[status as keyof typeof styles]}`}>
-        {status.charAt(0).toUpperCase() + status.slice(1)}
+        {label}
       </span>
     );
   };
@@ -123,26 +123,6 @@ export default function MyEvents() {
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
-      {/* Header */}
-      <header className="border-b">
-        <div className="container flex h-16 items-center justify-between px-4">
-          <div className="flex items-center gap-2">
-            <button 
-              className="p-2 rounded-xl hover:bg-gray-100 transition-all duration-200"
-              onClick={() => router.back()}
-            >
-              ←
-            </button>
-            <button 
-              onClick={() => router.push('/')} 
-              className="hover:opacity-80 transition-opacity cursor-pointer"
-            >
-              <MetraLogo />
-            </button>
-          </div>
-          <HamburgerMenu />
-        </div>
-      </header>
 
       {/* Main Content */}
       <main className="flex-1 p-4 pb-20 md:pb-4">

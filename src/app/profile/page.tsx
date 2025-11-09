@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { Globe, MapPin, Star, Shield, Settings, LogOut, User as UserIcon } from "lucide-react";
 import { 
@@ -9,6 +9,8 @@ import {
   OutlineButton,
   SecondaryButton
 } from "@/components/ui/base";
+import { useAuth } from "@/providers/auth-provider";
+import { createClient } from "@/lib/supabase/client";
 
 interface Profile {
   id: string;
@@ -25,59 +27,40 @@ interface Profile {
 
 export default function ProfilePage() {
   const router = useRouter();
-  const [profile, setProfile] = useState<Profile | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const { loading, user, profile, signOut } = useAuth();
+  const [signingOut, setSigningOut] = useState(false);
 
-  useEffect(() => {
-    checkAuthAndFetchProfile();
-  }, []);
+  const supabase = useMemo(() => createClient(), []);
 
-  const checkAuthAndFetchProfile = () => {
-    const session = localStorage.getItem("metra_session");
-    
-    if (!session) {
-      setIsLoggedIn(false);
-      setLoading(false);
-      return;
-    }
+  const displayName = profile?.name || user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'User';
+  const email = profile?.email || user?.email || '';
+  const role = profile?.role || (user as any)?.role || 'receiver';
+  const verified = (profile as any)?.verified ?? false;
+  const rating = (profile as any)?.rating as number | undefined;
+  const postalCode = (profile as any)?.postal_code ?? (profile as any)?.postalCode ?? undefined;
+  const photoUrl = (profile as any)?.photo_url || user?.user_metadata?.avatar_url || (user?.user_metadata as any)?.picture || undefined;
 
-    setIsLoggedIn(true);
-    
-    // Parse session and fetch profile
-    try {
-      const { user } = JSON.parse(session);
-      
-      // Mock profile data - in real app, fetch from API
-      const mockProfile: Profile = {
-        id: user.id,
-        name: user.name,
-        role: user.role,
-        bio: "Passionate about reducing food waste and helping my community. I organize weekly food drives and partner with local businesses to collect surplus food.",
-        photoUrl: "https://example.com/user.jpg",
-        rating: 4.8,
-        verified: true,
-        visibility: "public",
-        dmAllowed: true,
-        postalCode: "T2X1A1"
-      };
-      
-      setProfile(mockProfile);
-      setLoading(false);
-    } catch (error) {
-      console.error("Error parsing session:", error);
-      setIsLoggedIn(false);
-      setLoading(false);
+  const getRoleLabel = () => {
+    switch (role) {
+      case 'donor': return 'Food Donor';
+      case 'receiver':
+      case 'recipient': return 'Food Receiver';
+      case 'org': return 'Organization';
+      default: return role;
     }
   };
 
-  const handleLogout = () => {
-    localStorage.removeItem("metra_session");
-    router.push("/auth");
+  const handleLogout = async () => {
+    try {
+      setSigningOut(true);
+      await signOut();
+    } finally {
+      setSigningOut(false);
+    }
   };
 
   const handleSettings = () => {
-    router.push("/settings");
+    router.push('/settings');
   };
 
   if (loading) {
@@ -89,7 +72,7 @@ export default function ProfilePage() {
   }
 
   // Not logged in - show login prompt
-  if (!isLoggedIn) {
+  if (!user) {
     return (
       <div className="container max-w-md mx-auto">
         <Card>
@@ -128,12 +111,16 @@ export default function ProfilePage() {
         <div className="p-6">
           <div className="flex flex-col items-center gap-4 mb-6">
             <div className="relative">
-              <div className="h-24 w-24 rounded-full bg-green-600 flex items-center justify-center">
-                <span className="text-3xl font-bold text-white">
-                  {profile?.name.charAt(0).toUpperCase()}
-                </span>
-              </div>
-              {profile?.verified && (
+              {photoUrl ? (
+                <img src={photoUrl} alt={displayName} className="h-24 w-24 rounded-full object-cover" />
+              ) : (
+                <div className="h-24 w-24 rounded-full bg-green-600 flex items-center justify-center">
+                  <span className="text-3xl font-bold text-white">
+                    {displayName.charAt(0).toUpperCase()}
+                  </span>
+                </div>
+              )}
+              {verified && (
                 <div className="absolute bottom-0 right-0 h-6 w-6 rounded-full bg-green-500 flex items-center justify-center">
                   <Shield className="h-4 w-4 text-white" />
                 </div>
@@ -141,16 +128,15 @@ export default function ProfilePage() {
             </div>
             <div className="text-center">
               <h2 className="text-xl font-bold flex items-center justify-center gap-2">
-                {profile?.name}
-                {profile?.verified && (
+                {displayName}
+                {verified && (
                   <Shield className="h-5 w-5 text-green-500" />
                 )}
               </h2>
-              <p className="text-sm text-muted-foreground">
-                {profile?.role === "donor" && "Food Donor"}
-                {profile?.role === "recipient" && "Food Receiver"}
-                {profile?.role === "org" && "Organization"}
-              </p>
+              <p className="text-sm text-muted-foreground">{getRoleLabel()}</p>
+              {email && (
+                <p className="text-xs text-muted-foreground mt-1">{email}</p>
+              )}
             </div>
           </div>
           
@@ -163,29 +149,21 @@ export default function ProfilePage() {
             )}
             
             <div className="flex items-center justify-center gap-4">
-              <div className="text-center">
-                <div className="flex items-center justify-center gap-1">
-                  <Star className="h-5 w-5 text-yellow-500" />
-                  <span className="font-bold">{profile?.rating?.toFixed(1)}</span>
+              {typeof rating === 'number' && (
+                <div className="text-center">
+                  <div className="flex items-center justify-center gap-1">
+                    <Star className="h-5 w-5 text-yellow-500" />
+                    <span className="font-bold">{rating.toFixed(1)}</span>
+                  </div>
+                  <p className="text-sm text-muted-foreground">Rating</p>
                 </div>
-                <p className="text-sm text-muted-foreground">Rating</p>
-              </div>
-              
-              <div className="text-center">
-                <div className="font-bold">24</div>
-                <p className="text-sm text-muted-foreground">Events</p>
-              </div>
-              
-              <div className="text-center">
-                <div className="font-bold">156</div>
-                <p className="text-sm text-muted-foreground">Impacted</p>
-              </div>
+              )}
             </div>
             
-            {profile?.postalCode && (
+            {postalCode && (
               <div className="flex items-center justify-center gap-2 text-muted-foreground">
                 <MapPin className="h-4 w-4" />
-                <span>{profile.postalCode}</span>
+                <span>{postalCode}</span>
               </div>
             )}
           </div>
@@ -200,11 +178,11 @@ export default function ProfilePage() {
             </PrimaryButton>
             <SecondaryButton 
               className="w-full" 
-              onClick={() => router.push('/feed')}
+              onClick={() => router.push('/')}
             >
               Back to Home
             </SecondaryButton>
-            <OutlineButton className="w-full" onClick={handleLogout}>
+            <OutlineButton className="w-full" onClick={handleLogout} disabled={signingOut}>
               <LogOut className="h-4 w-4 mr-2" />
               Log Out
             </OutlineButton>

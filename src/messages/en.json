@@ -1,0 +1,74 @@
+{
+  "home": {
+    "title": "Welcome to Metra",
+    "description": "Community food donations coordination app",
+    "postalCode": "Postal Code",
+    "postalCodePlaceholder": "Enter your postal code",
+    "language": "Language",
+    "role": "Role",
+    "donor": "I'm a Donor",
+    "receiver": "I'm a Receiver",
+    "org": "I'm Organization Staff",
+    "browseWithoutAccount": "Browse as receiver without account",
+    "continueBrowsing": "Continue browsing"
+  },
+  "onboarding": {
+    "title": "Complete Your Profile",
+    "description": "Set up your preferences to get started",
+    "profileSetup": "Profile Setup",
+    "completeSetup": "Complete Setup"
+  },
+  "auth": {
+    "title": "Sign In",
+    "description": "Enter your email to sign in to your account",
+    "email": "Email",
+    "emailPlaceholder": "name@example.com",
+    "signIn": "Sign In",
+    "orContinueWith": "Or continue with",
+    "donor": "Donor",
+    "receiver": "Receiver",
+    "staff": "Staff"
+  },
+  "feed": {
+    "title": "Local Events",
+    "empty": "No events found in your area",
+    "rsvp": "RSVP",
+    "rsvped": "RSVP'd"
+  },
+  "event": {
+    "timeOptions": "Time Options",
+    "siteOptions": "Site Options",
+    "itemsNeeded": "Items Needed",
+    "attendees": "Attendees",
+    "chat": "Chat",
+    "finalized": "Finalized",
+    "vote": "Vote"
+  },
+  "profile": {
+    "edit": "Edit Profile",
+    "message": "Message",
+    "follow": "Follow",
+    "unfollow": "Unfollow",
+    "report": "Report",
+    "block": "Block"
+  },
+  "notifications": {
+    "title": "Notifications",
+    "empty": "No notifications",
+    "markAllRead": "Mark all as read"
+  },
+  "messages": {
+    "title": "Messages",
+    "empty": "No messages",
+    "typeMessage": "Type a message..."
+  },
+  "common": {
+    "loading": "Loading...",
+    "save": "Save",
+    "cancel": "Cancel",
+    "delete": "Delete",
+    "edit": "Edit",
+    "close": "Close",
+    "back": "Back"
+  }
+}

@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import { useAuthStore } from "@/store/authStore";
 import { Globe, MapPin, Users, Clock } from "lucide-react";
 import { 
   Card,
@@ -173,7 +174,9 @@ export default function Feed() {
   };
 
   const handleViewEvent = (eventId: string) => {
-    router.push(`/event/${eventId}`);
+    const role = useAuthStore.getState().role || (typeof window !== 'undefined' ? (() => { try { const s = localStorage.getItem('metra_session'); if (!s) return null; const parsed = JSON.parse(s); return parsed.role || parsed.user?.role; } catch { return null; } })() : null);
+    const prefix = role === 'donor' ? '/donor' : role === 'receiver' ? '/receiver' : '';
+    router.push(`${prefix}/event/${eventId}`);
   };
 
   if (loading) {

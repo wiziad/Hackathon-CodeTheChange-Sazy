@@ -201,7 +201,7 @@ export default function MyEvents() {
                             <OutlineButton onClick={() => handleRequestAction(req.id, "decline")}>
                               Decline
                             </OutlineButton>
-                            <OutlineButton onClick={() => router.push(`/event/${req.eventId}/chat`)}>
+                            <OutlineButton onClick={() => router.push(`/donor/event/${req.eventId}/chat`)}>
                               Open Chat
                             </OutlineButton>
                           </div>
@@ -236,7 +236,7 @@ export default function MyEvents() {
                 <Card 
                   key={event.id}
                   className="cursor-pointer hover:shadow-lg transition-shadow"
-                  onClick={() => router.push(`/event/${event.id}`)}
+                  onClick={() => router.push(`/donor/event/${event.id}`)}
                 >
                   <div className="p-5">
                     <div className="flex justify-between items-start mb-3">
@@ -282,8 +282,8 @@ export default function MyEvents() {
                     <div className="flex gap-2 pt-3 border-t">
                       <OutlineButton 
                         onClick={(e) => {
-                          e.stopPropagation();
-                          router.push(`/event/${event.id}`);
+                            e.stopPropagation();
+                          router.push(`/donor/event/${event.id}`);
                         }}
                         className="flex-1"
                       >
@@ -293,7 +293,7 @@ export default function MyEvents() {
                         <OutlineButton 
                           onClick={(e) => {
                             e.stopPropagation();
-                            router.push(`/event/${event.id}/chat`);
+                            router.push(`/donor/event/${event.id}/chat`);
                           }}
                           className="flex-1"
                         >

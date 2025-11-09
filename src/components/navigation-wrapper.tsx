@@ -15,7 +15,7 @@ export default function NavigationWrapper() {
 
   return (
     <BottomNav 
-      activeTab="feed" 
+      activeTab="home" 
       onTabChange={(tab) => {
         // In a real app, this would navigate to the appropriate page
         console.log(`Navigate to ${tab}`);

@@ -3,7 +3,7 @@
 import { use, useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Globe, MapPin, Users, Clock, MessageCircle } from "lucide-react";
-import { 
+import {
   Card,
   PollOption,
   PrimaryButton,
@@ -12,63 +12,15 @@ import {
   MetraLogo
 } from "@/components/ui/base";
 
-interface Profile {
-  id: string;
-  name: string;
-  role: string;
-  bio?: string;
-  photoUrl?: string;
-  rating?: number;
-  verified?: boolean;
-  visibility: string;
-  dmAllowed: boolean;
-  postalCode?: string;
-}
-
-interface Site {
-  id: string;
-  name: string;
-  address: string;
-  postalCode: string;
-  lat: number;
-  lng: number;
-  hoursToday: string;
-  accessibilityNotes?: string;
-}
-
-interface EventPost {
-  id: string;
-  creatorId: string;
-  title: string;
-  description?: string;
-  items: Array<{ categoryId: string; targetQty: number }>;
-  timeOptions: string[];
-  siteOptions: string[];           // Site ids
-  finalTime?: string;
-  finalSiteId?: string;
-  visibility: string;
-  rsvpCount: number;
-  rsvps: string[];                 // Profile ids
-  distanceKm?: number;
-  createdAt: string;
-  status: string;
-}
-
-interface PollState {
-  eventId: string;
-  timeVotes: Record<string, number>;
-  siteVotes: Record<string, number>;
-  voterIds: string[];
-}
-
-export default function EventDetail({ params }: { params: Promise<{ eventId: string }> }) {
+export default function EventDetailPage({ params }: { params: Promise<{ eventId: string }> }) {
   const router = useRouter();
-  const { eventId } = use(params);
-  const [event, setEvent] = useState<EventPost | null>(null);
-  const [creator, setCreator] = useState<Profile | null>(null);
-  const [poll, setPoll] = useState<PollState | null>(null);
-  const [siteOptions, setSiteOptions] = useState<Site[]>([]);
-  const [attendees, setAttendees] = useState<Profile[]>([]);
+  const resolved = use(params as any) as { eventId: string };
+  const eventId = resolved?.eventId;
+  const [event, setEvent] = useState<any | null>(null);
+  const [creator, setCreator] = useState<any | null>(null);
+  const [poll, setPoll] = useState<any | null>(null);
+  const [siteOptions, setSiteOptions] = useState<any[]>([]);
+  const [attendees, setAttendees] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [role, setRole] = useState<string | null>(() => {
     if (typeof window !== "undefined") {
@@ -90,9 +42,8 @@ export default function EventDetail({ params }: { params: Promise<{ eventId: str
   const [selectedSite, setSelectedSite] = useState<string | null>(null);
 
   useEffect(() => {
-    // Fetch event details from API
+    // Fetch event details from API (mock for now)
     fetchEventDetails();
-    // Check if a collaboration request already exists for this event
     try {
       const reqs = JSON.parse(localStorage.getItem("collab_requests") || "[]");
       if (reqs.some((r: any) => r.eventId === eventId && r.status === "pending")) {
@@ -103,7 +54,6 @@ export default function EventDetail({ params }: { params: Promise<{ eventId: str
     }
   }, [eventId]);
 
-  // Ensure role is set on client after mount
   useEffect(() => {
     try {
       const sessionRaw = localStorage.getItem("metra_session");
@@ -118,9 +68,7 @@ export default function EventDetail({ params }: { params: Promise<{ eventId: str
 
   const fetchEventDetails = async () => {
     try {
-      // In a real app, this would be an API call
-      // For now, we'll use mock data
-      const mockEvent: EventPost = {
+      const mockEvent = {
         id: eventId,
         creatorId: "1",
         title: "Weekend Food Drive",
@@ -128,9 +76,7 @@ export default function EventDetail({ params }: { params: Promise<{ eventId: str
         items: [
           { categoryId: "1", targetQty: 10 },
           { categoryId: "2", targetQty: 20 },
-          { categoryId: "3", targetQty: 15 },
-          { categoryId: "4", targetQty: 8 },
-          { categoryId: "5", targetQty: 5 }
+          { categoryId: "3", targetQty: 15 }
         ],
         timeOptions: ["today_11_13", "today_13_15", "tomorrow_09_11"],
         siteOptions: ["1", "2"],
@@ -141,8 +87,8 @@ export default function EventDetail({ params }: { params: Promise<{ eventId: str
         createdAt: new Date().toISOString(),
         status: "open"
       };
-      
-      const mockCreator: Profile = {
+
+      const mockCreator = {
         id: "1",
         name: "Alice Johnson",
         role: "donor",
@@ -154,8 +100,8 @@ export default function EventDetail({ params }: { params: Promise<{ eventId: str
         dmAllowed: true,
         postalCode: "T2X1A1"
       };
-      
-      const mockPoll: PollState = {
+
+      const mockPoll = {
         eventId: eventId,
         timeVotes: {
           "today_11_13": 3,
@@ -168,8 +114,8 @@ export default function EventDetail({ params }: { params: Promise<{ eventId: str
         },
         voterIds: ["1", "2", "3"]
       };
-      
-      const mockSiteOptions: Site[] = [
+
+      const mockSiteOptions = [
         {
           id: "1",
           name: "Community Center",
@@ -191,8 +137,8 @@ export default function EventDetail({ params }: { params: Promise<{ eventId: str
           accessibilityNotes: "Accessible parking available"
         }
       ];
-      
-      const mockAttendees: Profile[] = [
+
+      const mockAttendees = [
         {
           id: "1",
           name: "Alice Johnson",
@@ -204,33 +150,9 @@ export default function EventDetail({ params }: { params: Promise<{ eventId: str
           visibility: "public",
           dmAllowed: true,
           postalCode: "T2X1A1"
-        },
-        {
-          id: "2",
-          name: "Bob Smith",
-          role: "receiver",
-          bio: "Community volunteer helping local families",
-          photoUrl: "https://example.com/bob.jpg",
-          rating: 4.5,
-          verified: true,
-          visibility: "public",
-          dmAllowed: true,
-          postalCode: "T2X1A1"
-        },
-        {
-          id: "3",
-          name: "Community Food Bank",
-          role: "org",
-          bio: "Non-profit organization serving the community",
-          photoUrl: "https://example.com/cfb.jpg",
-          rating: 4.9,
-          verified: true,
-          visibility: "public",
-          dmAllowed: true,
-          postalCode: "T2X1A1"
         }
       ];
-      
+
       setEvent(mockEvent);
       setCreator(mockCreator);
       setPoll(mockPoll);
@@ -245,25 +167,11 @@ export default function EventDetail({ params }: { params: Promise<{ eventId: str
 
   const handleRSVP = async () => {
     if (!event) return;
-    
-    // Toggle RSVP state
     if (hasRSVPd) {
-      // Unregister
-      console.log(`Un-RSVP from event ${event.id}`);
-      setEvent({
-        ...event,
-        rsvpCount: Math.max(0, event.rsvpCount - 1),
-        rsvps: event.rsvps.filter(id => id !== "current-user")
-      });
+      setEvent({ ...event, rsvpCount: Math.max(0, event.rsvpCount - 1), rsvps: event.rsvps.filter((id: string) => id !== "current-user") });
       setHasRSVPd(false);
     } else {
-      // Register
-      console.log(`RSVP to event ${event.id}`);
-      setEvent({
-        ...event,
-        rsvpCount: event.rsvpCount + 1,
-        rsvps: [...event.rsvps, "current-user"]
-      });
+      setEvent({ ...event, rsvpCount: event.rsvpCount + 1, rsvps: [...event.rsvps, "current-user"] });
       setHasRSVPd(true);
     }
   };
@@ -283,50 +191,40 @@ export default function EventDetail({ params }: { params: Promise<{ eventId: str
 
   const handleVote = async (time?: string, siteId?: string) => {
     if (!event || !poll) return;
-    
-    console.log(`Vote on event ${event.id}: time=${time}, site=${siteId}`);
-    
-    const updatedPoll = { ...poll };
-    
+    const updatedPoll = { ...poll } as any;
     if (time) {
-      // Toggle time vote
       if (selectedTime === time) {
-        // Unvote
         updatedPoll.timeVotes[time] = Math.max(0, (updatedPoll.timeVotes[time] || 0) - 1);
         setSelectedTime(null);
       } else {
-        // Remove previous vote if exists
         if (selectedTime) {
           updatedPoll.timeVotes[selectedTime] = Math.max(0, (updatedPoll.timeVotes[selectedTime] || 0) - 1);
         }
-        // Add new vote
         updatedPoll.timeVotes[time] = (updatedPoll.timeVotes[time] || 0) + 1;
         setSelectedTime(time);
       }
     }
-    
     if (siteId) {
-      // Toggle site vote
       if (selectedSite === siteId) {
-        // Unvote
         updatedPoll.siteVotes[siteId] = Math.max(0, (updatedPoll.siteVotes[siteId] || 0) - 1);
         setSelectedSite(null);
       } else {
-        // Remove previous vote if exists
         if (selectedSite) {
           updatedPoll.siteVotes[selectedSite] = Math.max(0, (updatedPoll.siteVotes[selectedSite] || 0) - 1);
         }
-        // Add new vote
         updatedPoll.siteVotes[siteId] = (updatedPoll.siteVotes[siteId] || 0) + 1;
         setSelectedSite(siteId);
       }
     }
-    
     setPoll(updatedPoll);
   };
 
+  // effectiveRole is the detected role from session/localStorage
+  const effectiveRole = role;
+
   const handleChat = () => {
-    router.push(`/event/${eventId}/chat`);
+    const prefix = effectiveRole === "donor" ? "/donor" : effectiveRole === "receiver" ? "/receiver" : "";
+    router.push(`${prefix}/event/${eventId}/chat`);
   };
 
   if (loading) {
@@ -345,7 +243,6 @@ export default function EventDetail({ params }: { params: Promise<{ eventId: str
     );
   }
 
-  // Format time option labels
   const formatTimeLabel = (timeOption: string) => {
     const parts = timeOption.split('_');
     if (parts.length === 3) {
@@ -357,39 +254,22 @@ export default function EventDetail({ params }: { params: Promise<{ eventId: str
     return timeOption;
   };
 
-  // Helper to check donor role synchronously
-  const isDonorRole = (): boolean => {
-    if (role === "donor") return true;
-    if (typeof window === "undefined") return false;
-    try {
-      const raw = localStorage.getItem("metra_session");
-      if (!raw) return false;
-      const s = JSON.parse(raw);
-      const r = s.role || s.user?.role;
-      return r === "donor";
-    } catch {
-      return false;
-    }
-  };
-  const totalTimeVotes = Object.values(poll.timeVotes).reduce((sum, votes) => sum + votes, 0);
-  
-  // Calculate total votes for site options
-  const totalSiteVotes = Object.values(poll.siteVotes).reduce((sum, votes) => sum + votes, 0);
+  const totalTimeVotes = Object.values(poll.timeVotes).reduce((sum: number, votes: any) => sum + Number(votes), 0);
+  const totalSiteVotes = Object.values(poll.siteVotes).reduce((sum: number, votes: any) => sum + Number(votes), 0);
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
-      {/* Header */}
       <header className="border-b">
         <div className="container flex h-16 items-center justify-between px-4">
           <div className="flex items-center gap-2">
-            <button 
+            <button
               className="p-2 rounded-xl hover:bg-gray-100 transition-all duration-200"
               onClick={() => router.back()}
             >
               ←
             </button>
-            <button 
-              onClick={() => router.push('/')} 
+            <button
+              onClick={() => router.push('/')}
               className="hover:opacity-80 transition-opacity cursor-pointer"
             >
               <MetraLogo />
@@ -398,102 +278,78 @@ export default function EventDetail({ params }: { params: Promise<{ eventId: str
         </div>
       </header>
 
-      {/* Main Content */}
       <main className="flex-1 p-4 pb-20 md:pb-4">
-        <div className="container max-w-2xl mx-auto space-y-6">
+        <div className="container max-w-4xl mx-auto space-y-6">
+          <h1 className="text-2xl font-bold">{event.title}</h1>
+          <p className="text-muted-foreground">{event.description}</p>
+
           <Card>
-            <div className="p-6">
-              <div className="flex justify-between items-start mb-4">
-                <div>
-                  <h2 className="text-xl font-bold">{event.title}</h2>
-                  <p className="text-sm text-muted-foreground">Hosted by {creator.name}</p>
+            <div className="p-4">
+              <div className="flex gap-4 items-center mb-4">
+                <div className="flex-1">
+                  <p className="text-sm text-muted-foreground">Organized by {creator.name}</p>
                 </div>
-                <div className="flex items-center gap-1 text-sm text-muted-foreground">
-                  <MapPin className="h-4 w-4" />
-                  <span>{event.distanceKm?.toFixed(1)} km</span>
-                </div>
-              </div>
-              
-              <p className="text-muted-foreground mb-6">
-                {event.description}
-              </p>
-              
-              {/* Event Details */}
-              <div className="space-y-4 mb-6">
-                <div className="flex items-center gap-3">
-                  <Clock className="h-5 w-5 text-brand-600" />
-                  <div>
-                    <p className="font-semibold">Time</p>
-                    <p className="text-sm text-muted-foreground">
-                      {event.finalTime ? formatTimeLabel(event.finalTime) : formatTimeLabel(event.timeOptions[0])}
-                    </p>
-                  </div>
-                </div>
-                
-                <div className="flex items-center gap-3">
-                  <MapPin className="h-5 w-5 text-brand-600" />
-                  <div>
-                    <p className="font-semibold">Location</p>
-                    <p className="text-sm text-muted-foreground">
-                      {event.finalSiteId 
-                        ? siteOptions.find(s => s.id === event.finalSiteId)?.name 
-                        : siteOptions.find(s => s.id === event.siteOptions[0])?.name}
-                    </p>
-                  </div>
+                <div className="flex gap-2">
+                  <PrimaryButton onClick={handleRSVP}>{hasRSVPd ? 'Leave' : 'RSVP'}</PrimaryButton>
+                  <SecondaryButton onClick={handleRequestCollaborate} disabled={hasRequested}>{hasRequested ? 'Requested' : 'Request to Collaborate'}</SecondaryButton>
                 </div>
               </div>
-              
-              <div className="space-y-6">
-                {/* Items Needed */}
+
+              <div className="grid md:grid-cols-2 gap-4">
                 <div>
-                  <h3 className="font-semibold mb-3">Items Needed</h3>
-                  <div className="flex flex-wrap gap-2">
-                    {event.items.map((item, index) => (
-                      <span 
-                        key={index} 
-                        className="inline-flex items-center rounded-full bg-brand-50 px-2.5 py-0.5 text-xs font-medium text-brand-700"
+                  <h3 className="text-sm font-medium mb-2">Time options</h3>
+                  {event.timeOptions.map((t: string) => (
+                    <div key={t} className="mb-2">
+                      <button
+                        className={`w-full text-left px-4 py-2 rounded-lg border ${selectedTime === t ? 'bg-primary text-white' : ''}`}
+                        onClick={() => handleVote(t, undefined)}
                       >
-                        {item.targetQty} items
-                      </span>
-                    ))}
-                  </div>
+                        <div className="flex justify-between">
+                          <span>{formatTimeLabel(t)}</span>
+                          <span className="text-sm text-muted-foreground">{poll.timeVotes[t] || 0} votes</span>
+                        </div>
+                      </button>
+                    </div>
+                  ))}
                 </div>
-                
-                {/* Attendees */}
+
                 <div>
-                  <h3 className="font-semibold mb-3">Attendees ({event.rsvpCount})</h3>
-                  <div className="flex flex-wrap gap-2">
-                    {attendees.map((attendee) => (
-                      <div 
-                        key={attendee.id} 
-                        className="flex items-center gap-2 rounded-full bg-brand-50 px-3 py-1.5"
+                  <h3 className="text-sm font-medium mb-2">Site options</h3>
+                  {siteOptions.map((s) => (
+                    <div key={s.id} className="mb-2">
+                      <button
+                        className={`w-full text-left px-4 py-2 rounded-lg border ${selectedSite === s.id ? 'bg-primary text-white' : ''}`}
+                        onClick={() => handleVote(undefined, s.id)}
                       >
-                        <div className="h-6 w-6 rounded-full bg-brand-600"></div>
-                        <span className="text-sm">{attendee.name}</span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-                
-                <div className="flex flex-col gap-3 pt-4">
-                  <PrimaryButton 
-                    className="w-full" 
-                    onClick={handleRequestCollaborate}
-                    disabled={hasRequested}
-                  >
-                    {hasRequested ? "Requested - Pending" : "Request to Collaborate"}
-                  </PrimaryButton>
-                  <OutlineButton 
-                    className="w-full" 
-                    onClick={handleChat}
-                  >
-                    <MessageCircle className="h-4 w-4 mr-2" />
-                    Join Chat
-                  </OutlineButton>
+                        <div className="flex justify-between">
+                          <span>{s.name}</span>
+                          <span className="text-sm text-muted-foreground">{poll.siteVotes[s.id] || 0} votes</span>
+                        </div>
+                      </button>
+                    </div>
+                  ))}
                 </div>
               </div>
+
             </div>
           </Card>
+
+          {/* Stacked full-width action buttons (original visual) */}
+          <div className="mt-6 space-y-3">
+            {effectiveRole === "donor" ? (
+              <PrimaryButton onClick={handleRequestCollaborate} disabled={hasRequested} className="w-full py-4 rounded-2xl">
+                {hasRequested ? 'Requested - Pending' : 'Request to Collaborate'}
+              </PrimaryButton>
+            ) : (
+              <PrimaryButton onClick={handleRSVP} className="w-full py-4 rounded-2xl">
+                {hasRSVPd ? 'Leave' : 'RSVP'}
+              </PrimaryButton>
+            )}
+
+            <OutlineButton onClick={handleChat} className="w-full py-4 rounded-2xl flex items-center justify-center gap-2">
+              <MessageCircle className="h-5 w-5" /> Open Chat
+            </OutlineButton>
+          </div>
         </div>
       </main>
     </div>

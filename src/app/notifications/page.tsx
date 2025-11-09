@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import { useAuthStore } from "@/store/authStore";
 import { Globe, Bell, CheckCircle, User, Calendar, MessageCircle } from "lucide-react";
 import { 
   Card,
@@ -109,7 +110,9 @@ export default function Notifications() {
   const handleNotificationClick = (notification: Notification) => {
     // In a real app, this would navigate to the relevant page
     if (notification.eventId) {
-      router.push(`/event/${notification.eventId}`);
+      const role = useAuthStore.getState().role || (typeof window !== 'undefined' ? (() => { try { const s = localStorage.getItem('metra_session'); if (!s) return null; const parsed = JSON.parse(s); return parsed.role || parsed.user?.role; } catch { return null; } })() : null);
+      const prefix = role === 'donor' ? '/donor' : role === 'receiver' ? '/receiver' : '';
+      router.push(`${prefix}/event/${notification.eventId}`);
     }
   };
 

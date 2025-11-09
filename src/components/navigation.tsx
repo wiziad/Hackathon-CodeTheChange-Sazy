@@ -4,34 +4,65 @@ import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Button } from "@/components/ui/button";
+import { useAuthStore } from "@/store/authStore";
 import { 
   Home, 
-  Search, 
-  MessageCircle, 
   User, 
   Bell,
   Menu,
-  X
+  X,
+  Plus,
+  Calendar,
+  Grid
 } from "lucide-react";
 
-const navItems = [
-  { href: "/", label: "Home", icon: Home },
-  { href: "/feed", label: "Feed", icon: Search },
-  { href: "/messages", label: "Messages", icon: MessageCircle },
-  { href: "/notifications", label: "Notifications", icon: Bell },
-  { href: "/profile", label: "Profile", icon: User },
-];
+type NavItem = { href: string; label: string; icon: any };
+
+function buildNavItems(role: string | null): NavItem[] {
+  // Receiver: only Home, Notifications, Profile
+  // Donor: Home, Notifications, Profile + Create Event, My Events, Donor Dashboard
+  const base = [
+    { href: "/", label: "Home", icon: Home },
+    { href: "/notifications", label: "Notifications", icon: Bell },
+    { href: "/profile", label: "Profile", icon: User },
+  ];
+
+  if (role === "donor") {
+    return [
+      ...base,
+      { href: "/donor/event/new", label: "Create Event", icon: Plus },
+      { href: "/donor/my-events", label: "My Events", icon: Calendar },
+      { href: "/donor", label: "Donor Dashboard", icon: Grid },
+    ];
+  }
+
+  return base;
+}
 
 export function Navigation() {
   const pathname = usePathname();
+  const roleFromStore = useAuthStore((s) => s.role);
+  // If the store doesn't have the role (e.g., page refresh), fall back to localStorage session
+  const role = roleFromStore || (typeof window !== "undefined" ? (() => {
+    try {
+      const s = localStorage.getItem("metra_session");
+      if (!s) return null;
+      const parsed = JSON.parse(s);
+      return parsed.role || parsed.user?.role || null;
+    } catch {
+      return null;
+    }
+  })() : null);
+
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const navItems = buildNavItems(role);
 
   return (
     <>
       {/* Mobile Navigation */}
       <div className="md:hidden fixed bottom-0 left-0 right-0 bg-background border-t z-50">
         <div className="flex justify-around items-center h-16">
-          {navItems.map((item) => {
+          {navItems.map((item: NavItem) => {
             const Icon = item.icon;
             const isActive = pathname === item.href;
             
@@ -63,7 +94,7 @@ export function Navigation() {
           
           <nav className="flex-1 p-4">
             <ul className="space-y-2">
-              {navItems.map((item) => {
+              {navItems.map((item: NavItem) => {
                 const Icon = item.icon;
                 const isActive = pathname === item.href;
                 
@@ -113,7 +144,7 @@ export function Navigation() {
         >
           <div className="p-4 pt-16">
             <ul className="space-y-4">
-              {navItems.map((item) => {
+              {navItems.map((item: NavItem) => {
                 const Icon = item.icon;
                 const isActive = pathname === item.href;
                 

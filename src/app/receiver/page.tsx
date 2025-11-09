@@ -39,10 +39,10 @@ export default function RecipientHome() {
         <Card className="p-4 mb-6">
           <h2 className="text-xl font-bold mb-3">Events near you</h2>
           <div className="space-y-3">
-            <div onClick={() => router.push("/event/1")} className="cursor-pointer">
+            <div onClick={() => router.push("/receiver/event/1")} className="cursor-pointer">
               <EventCard title="Afternoon Drop" description="Southview Centre" distance="0.9 km" time="Today, 2-4 PM" attendees={10} capacity={18} items={["Grains","Produce"]} />
             </div>
-            <div onClick={() => router.push("/event/2")} className="cursor-pointer">
+            <div onClick={() => router.push("/receiver/event/2")} className="cursor-pointer">
               <EventCard title="Protein Help" description="Forest Lawn Library" distance="1.4 km" time="Today, 4-6 PM" attendees={7} capacity={15} items={["Canned Tuna","Beans"]} />
             </div>
           </div>

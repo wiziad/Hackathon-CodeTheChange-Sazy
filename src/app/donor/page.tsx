@@ -56,7 +56,7 @@ export default function DonorHome() {
         <Card className="p-4">
           <h2 className="text-xl font-bold mb-3">Suggested events</h2>
           <div className="grid md:grid-cols-2 gap-4">
-            <div onClick={() => router.push("/event/1")} className="cursor-pointer">
+            <div onClick={() => router.push("/donor/event/1")} className="cursor-pointer">
               <EventCard 
                 title="Fresh Produce Drop-Off" 
                 description="Local garden share" 
@@ -71,7 +71,7 @@ export default function DonorHome() {
                 onRsvp={() => requestCollaborate("1", "Fresh Produce Drop-Off")}
               />
             </div>
-            <div onClick={() => router.push("/event/2")} className="cursor-pointer">
+            <div onClick={() => router.push("/donor/event/2")} className="cursor-pointer">
               <EventCard 
                 title="Community Food Drive" 
                 description="Monthly collection" 

@@ -1,7 +1,8 @@
 "use client";
 import * as React from "react";
 import { useRouter } from "next/navigation";
-import { Calendar, MapPin, Menu, MessageCircle, Users, Bell, User } from "lucide-react";
+import { Calendar, MapPin, Menu, MessageCircle, Users, Bell, User, Home, Plus, Grid } from "lucide-react";
+import { useAuthStore } from "@/store/authStore";
 
 export function cn(...c: Array<string | false | null | undefined>) {
   return c.filter(Boolean).join(" ");
@@ -188,18 +189,34 @@ export function EventCard({
 }
 
 /* BottomNav */
-type TabId = "feed" | "explore" | "messages" | "profile";
+type TabId = "home" | "notifications" | "profile" | "create" | "my-events" | "dashboard";
 export function BottomNav({ activeTab, onTabChange, className }: { activeTab: TabId; onTabChange: (id: TabId) => void; className?: string; }) {
-  const tabs: { id: TabId; label: string; icon: React.ReactNode }[] = [
-    { id: "feed", label: "Feed", icon: <Menu size={20} /> },
-    { id: "explore", label: "Explore", icon: <MapPin size={20} /> },
-    { id: "messages", label: "Messages", icon: <MessageCircle size={20} /> },
-    { id: "profile", label: "Profile", icon: <Users size={20} /> },
+  const router = useRouter();
+  const roleFromStore = useAuthStore((s) => s.role);
+  const role = roleFromStore || (typeof window !== "undefined" ? (() => {
+    try {
+      const s = localStorage.getItem("metra_session"); if (!s) return null; const parsed = JSON.parse(s); return parsed.role || parsed.user?.role || null;
+    } catch { return null; }
+  })() : null);
+
+  const baseTabs: { id: TabId; label: string; icon: React.ReactNode; path?: string }[] = [
+    { id: "home", label: "Home", icon: <Home size={20} />, path: "/" },
+    { id: "notifications", label: "Notifications", icon: <Bell size={20} />, path: "/notifications" },
+    { id: "profile", label: "Profile", icon: <Users size={20} />, path: "/profile" },
   ];
+
+  const donorTabs: { id: TabId; label: string; icon: React.ReactNode; path?: string }[] = [
+    { id: "create", label: "Create Event", icon: <Plus size={20} />, path: "/donor/event/new" },
+    { id: "my-events", label: "My Events", icon: <Calendar size={20} />, path: "/donor/my-events" },
+    { id: "dashboard", label: "Donor Dashboard", icon: <Grid size={20} />, path: "/donor" },
+  ];
+
+  const tabs = role === "donor" ? [...baseTabs, ...donorTabs] : baseTabs;
+
   return (
     <div className={cn("bg-white border border-brand-200 rounded-2xl p-2 flex gap-2", className)}>
       {tabs.map((t) => (
-        <button key={t.id} onClick={() => onTabChange(t.id)}
+        <button key={t.id} onClick={() => { onTabChange(t.id); if (t.path) router.push(t.path); }}
           className={cn(
             "flex-1 py-3 flex flex-col items-center gap-1 rounded-xl font-medium transition-all duration-200",
             activeTab === t.id
@@ -269,12 +286,21 @@ export function HamburgerMenu() {
 
   const menuItems = [
     { label: "Home", path: "/" },
-    { label: "Donor Dashboard", path: "/donor" },
-    { label: "My Events", path: "/donor/my-events" },
-    { label: "Create Event", path: "/donor/event/new" },
+    // Donor-only links will be conditionally added below
     { label: "Notifications", path: "/notifications" },
     { label: "Profile", path: "/profile" },
   ];
+
+  // Determine role from auth store (client-side)
+  const role = useAuthStore((s) => s.role);
+
+  // Insert donor-only items if the user is a donor
+  if (role === "donor") {
+    // insert after Home (index 0)
+    menuItems.splice(1, 0, { label: "Donor Dashboard", path: "/donor" });
+    menuItems.splice(2, 0, { label: "My Events", path: "/donor/my-events" });
+    menuItems.splice(3, 0, { label: "Create Event", path: "/donor/event/new" });
+  }
 
   const handleNavigate = (path: string) => {
     router.push(path);

@@ -15,6 +15,12 @@ export default function HomePage() {
   const [postalCode, setPostalCode] = useState("");
   const [requested, setRequested] = useState<Record<string, boolean>>({});
   const [events, setEvents] = useState<any[]>([]);
+  
+  // Use profile role if available, otherwise fallback to localStorage
+  // Normalize: 'recipient' is treated as 'receiver' for UI consistency
+  const storedRole = typeof window !== 'undefined' ? localStorage.getItem('metra_role') : null;
+  const normalizedStoredRole = storedRole === 'recipient' ? 'receiver' : storedRole;
+  const userRole = profile?.role === 'recipient' ? 'receiver' : (profile?.role || normalizedStoredRole);
   const displayName = profile?.name || user?.user_metadata?.full_name || user?.email?.split('@')[0] || '';
 
   useEffect(() => {
@@ -127,7 +133,7 @@ export default function HomePage() {
   }
 
   // Donor home content
-  if (profile?.role === 'donor') {
+  if (userRole === 'donor') {
     return (
       <div className="min-h-screen bg-brand-50 text-brand-900">
 
@@ -203,7 +209,7 @@ export default function HomePage() {
   }
 
   // Receiver home content
-  if (profile?.role === 'receiver' || profile?.role === 'recipient') {
+  if (userRole === 'receiver' || userRole === 'recipient') {
     const bestWindowLabel = "2-4 PM";
     
     return (

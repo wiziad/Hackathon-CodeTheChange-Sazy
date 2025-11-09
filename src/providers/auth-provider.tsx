@@ -33,12 +33,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (error && error.code === 'PGRST116') {
         // create minimal profile using any onboarding info saved during guest flow
         const savedRole = localStorage.getItem('metra_role');
-        const role = savedRole === 'recipient' ? 'receiver' : (savedRole as 'donor' | 'receiver') || 'receiver';
+        // Keep 'recipient' as-is since that's what the database expects
+        const role = (savedRole as 'donor' | 'recipient') || 'recipient';
         const postal = localStorage.getItem('metra_postal') || null;
         const name = u.user_metadata?.full_name || u.email?.split('@')[0] || 'New user';
         const { data: created } = await supabase.from('profiles')
           .insert({ auth_id: u.id, email: u.email, name, role, postal_code: postal, visibility: 'public', dm_allowed: true })
           .select('*').single();
+        if (created) {
+          localStorage.setItem('metra_role', created.role || 'recipient');
+          if (created.postal_code) {
+            localStorage.setItem('metra_postal', created.postal_code);
+          }
+        }
         setProfile(created);
         return;
       }
@@ -52,6 +59,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (data) {
         console.log('Profile loaded:', data);
         setProfile(data);
+        // Store role in localStorage as fallback for when backend isn't ready
+        localStorage.setItem('metra_role', data.role || 'recipient');
+        if (data.postal_code) {
+          localStorage.setItem('metra_postal', data.postal_code);
+        }
       }
     } catch (error) {
       console.error('Profile load exception:', error);
@@ -76,6 +88,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const signOut = async () => {
     try {
       await supabase.auth.signOut();
+    } catch (e) {
+      console.error('Sign out error:', e);
     } finally {
       setSession(null);
       setUser(null);
@@ -83,6 +97,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       try {
         localStorage.removeItem('metra_session');
         localStorage.removeItem('metra_return_to');
+        localStorage.removeItem('metra_role');
+        localStorage.removeItem('metra_postal');
+        localStorage.removeItem('metra_events');
         // Clear potential Supabase auth tokens in localStorage (sb-*) for dev environments
         for (let i = 0; i < localStorage.length; i++) {
           const k = localStorage.key(i) || '';
@@ -92,10 +109,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         }
       } catch {}
       // Force navigation to sign-in to avoid stale state
-      try { router.replace('/auth'); } catch {}
-      if (typeof window !== 'undefined') {
-        window.location.assign('/auth');
-      }
+      router.push('/auth');
     }
   };
 

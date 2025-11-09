@@ -7,7 +7,7 @@ import { createClient } from '@/lib/supabase/client'
 export default function OnboardingPage() {
   const router = useRouter()
   const [step, setStep] = useState(1)
-  const [role, setRole] = useState<'donor' | 'receiver'>('donor')
+  const [role, setRole] = useState<'donor' | 'recipient'>('donor')
   const [postalCode, setPostalCode] = useState('')
   const [firstName, setFirstName] = useState('')
   const [lastName, setLastName] = useState('')
@@ -38,6 +38,17 @@ export default function OnboardingPage() {
         throw new Error('No user found')
       }
       
+      // Role is already 'donor' or 'receiver' based on state type
+      console.log('Submitting profile with role:', role);
+      console.log('Full profile data:', {
+        role,
+        firstName,
+        lastName,
+        postalCode,
+        householdSize,
+        dietaryTags
+      });
+      
       // Create or update profile
       const { data, error } = await supabase
         .from('profiles')
@@ -47,21 +58,28 @@ export default function OnboardingPage() {
           name: `${firstName} ${lastName}`.trim() || user.email?.split('@')[0] || 'User',
           first_name: firstName,
           last_name: lastName,
-          role,
+          role: role,
           postal_code: postalCode,
           household_size: householdSize,
-          dietary_tags: dietaryTags,
+          dietary_tags: dietaryTags ? dietaryTags.split(',').map(t => t.trim()).filter(t => t) : [],
           visibility: 'public',
           dm_allowed: true
+        }, {
+          onConflict: 'auth_id'
         })
         .select()
         .single()
       
       if (error) {
+        console.error('Profile upsert error:', error)
         throw new Error(error.message)
       }
       
       console.log('Profile created:', data)
+      
+      // Store role in localStorage as fallback
+      localStorage.setItem('metra_role', role);
+      localStorage.setItem('metra_postal', postalCode);
       
       // Set flag for welcome animation
       localStorage.setItem('showWelcomeAnimation', 'true')
@@ -100,9 +118,9 @@ export default function OnboardingPage() {
                 <p className="text-sm text-gray-600">Share food with your community</p>
               </button>
               <button
-                onClick={() => setRole('receiver')}
+                onClick={() => setRole('recipient')}
                 className={`w-full p-4 rounded-lg border-2 text-left transition-colors ${
-                  role === 'receiver' 
+                  role === 'recipient' 
                     ? 'border-brand-500 bg-brand-50' 
                     : 'border-gray-200 hover:border-gray-300'
                 }`}

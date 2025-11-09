@@ -223,7 +223,7 @@ export default function MyEvents() {
                       ? "You haven't created any events yet" 
                       : `You don't have any ${filter} events`}
                   </p>
-                  <PrimaryButton onClick={() => router.push("/donor/event/new")}>
+                  <PrimaryButton onClick={() => router.push("/donor/event/new")} className="flex items-center">
                     <Plus className="h-4 w-4 mr-2" />
                     Create Your First Event
                   </PrimaryButton>

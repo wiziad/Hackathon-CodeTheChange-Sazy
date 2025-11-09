@@ -3,11 +3,12 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useAuthStore } from "@/store/authStore";
-import { Globe, MapPin, Users, Clock } from "lucide-react";
+import { MapPin, Users, Clock, User, Grid } from "lucide-react";
 import { 
   Card,
   EventCard,
-  MetraLogo
+  StickyHeader,
+  HamburgerMenu
 } from "@/components/ui/base";
 
 interface Profile {
@@ -189,17 +190,27 @@ export default function Feed() {
 
   return (
     <div className="min-h-screen bg-white dark:bg-black flex flex-col">
-      {/* Header */}
-      <header className="border-b">
-        <div className="container flex h-16 items-center justify-between px-4">
-          <MetraLogo />
-          <div className="flex items-center gap-2">
-            <button className="p-2 rounded-xl hover:bg-gray-100 transition-all duration-200">
-              <Globe className="h-5 w-5" />
+      <StickyHeader
+        rightSide={(
+          <>
+            <button
+              onClick={() => router.push('/donor')}
+              className="p-2 rounded-xl hover:bg-gray-100 transition-all duration-200"
+              aria-label="Dashboard"
+            >
+              <Grid className="h-5 w-5 text-brand-600" />
             </button>
-          </div>
-        </div>
-      </header>
+            <button
+              onClick={() => router.push('/profile')}
+              className="p-2 rounded-xl hover:bg-gray-100 transition-all duration-200"
+              aria-label="Profile"
+            >
+              <User className="h-5 w-5 text-brand-600" />
+            </button>
+            <HamburgerMenu />
+          </>
+        )}
+      />
 
       {/* Main Content */}
       <main className="flex-1 p-4 pb-20 md:pb-4">

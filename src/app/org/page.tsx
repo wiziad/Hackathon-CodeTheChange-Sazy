@@ -4,8 +4,8 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { ThemeToggle } from "@/components/theme-toggle";
-import { Globe, AlertTriangle, CheckCircle, Users, Package } from "lucide-react";
+import { StickyHeader as GlobalStickyHeader } from "@/components/ui/base";
+import { AlertTriangle, CheckCircle, Users, Package } from "lucide-react";
 
 interface Site {
   id: string;
@@ -64,20 +64,7 @@ export default function OrgDashboard() {
   return (
     <div className="min-h-screen bg-background flex flex-col">
       {/* Header */}
-      <header className="border-b">
-        <div className="container flex h-16 items-center justify-between px-4">
-          <div className="flex items-center gap-2">
-            <div className="h-8 w-8 rounded-full bg-primary"></div>
-            <span className="text-xl font-bold">Metra</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <Button variant="ghost" size="icon">
-              <Globe className="h-5 w-5" />
-            </Button>
-            <ThemeToggle />
-          </div>
-        </div>
-      </header>
+      <GlobalStickyHeader />
 
       {/* Main Content */}
       <main className="flex-1 p-4">
@@ -154,9 +141,9 @@ export default function OrgDashboard() {
                       site.riskLevel === "low" 
                         ? "bg-green-500" 
                         : site.riskLevel === "medium" 
-                          ? "bg-yellow-500" 
+                          ? "bg-blue-500" 
                           : "bg-red-500"
-                    }`}></div>
+                      }`}></div>
                     <div className="flex-1">
                       <div className="flex justify-between">
                         <p className="font-medium">{site.name}</p>
@@ -164,7 +151,7 @@ export default function OrgDashboard() {
                           site.riskLevel === "low" 
                             ? "bg-green-100 text-green-800" 
                             : site.riskLevel === "medium" 
-                              ? "bg-yellow-100 text-yellow-800" 
+                              ? "bg-blue-100 text-blue-800" 
                               : "bg-red-100 text-red-800"
                         }`}>
                           {site.riskLevel === "low" 

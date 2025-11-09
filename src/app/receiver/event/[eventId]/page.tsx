@@ -251,7 +251,9 @@ export default function ReceiverEventPage({ params }: { params: { eventId: strin
                   <PrimaryButton className="w-full py-3" onClick={handleRSVP}>{hasRSVPd ? 'Leave' : 'RSVP'}</PrimaryButton>
                 </div>
                 <div>
-                  <OutlineButton className="w-full py-3" onClick={handleChat}>Open Chat</OutlineButton>
+                  <OutlineButton className="w-full py-3 flex items-center justify-center gap-2" onClick={handleChat}>
+                    <MessageCircle className="h-5 w-5" /> Open Chat
+                  </OutlineButton>
                 </div>
               </div>
             </div>

@@ -5,6 +5,7 @@ import { PrimaryButton, SecondaryButton, OutlineButton, Card, EventCard, Input, 
 import { Package, Heart, MapPin, Calendar, Plus } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useAuth } from '@/providers/auth-provider';
+import { MapView } from "@/components/map-view";
 
 export default function HomePage() {
   const router = useRouter();
@@ -333,6 +334,11 @@ export default function HomePage() {
                   <PrimaryButton onClick={() => router.push("/receiver")}>Get Started as Recipient</PrimaryButton>
                 </div>
               </Card>
+            </div>
+
+            {/* Add the MapView component with the specified styling */}
+            <div className="max-w-4xl mx-auto mb-12">
+              <MapView className="h-[400px] rounded-lg" />
             </div>
 
             <div className="max-w-md mx-auto mb-16">
